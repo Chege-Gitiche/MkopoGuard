@@ -9,7 +9,7 @@
 **Next:** Phase 1.1 — audit notebook for the 20-country Findex pool.
 
 
-## 2026-10-06 — Phase 1 Auditing the dataset
+## 2026-10-06 — Phase 1 Step 1.1 Auditing the dataset
 
 
 **Did:** I was able to import the dataset to the project and audit it to find the required countries and columns I will be using for this project . I was able to perform tests on the dataset config file to ensure it has been appropriately set.
@@ -21,3 +21,23 @@ Used ISO country codes instead of names because "Côte d'Ivoire" gets mangled
 
 **Decisions:**
 - Choices I made and why (or "None")
+
+## 2026-10-06 — Step 1.2: Decode the Findex columns + adults-only decision
+
+**Goal:** Turn the survey's coded column names into plain-English features, and decide which columns the project keeps.
+
+**Did:**
+- Created `docs/findex_columns.md`: 23 model features, 1 fairness-audit column (`female`) and 5 identifier/metadata columns, each with a readable name, question text and answer codes
+- Checked answer codes against the official World Bank codebook (WLD_2021_FINDEX_v03_M)
+- Added a check cell to `notebooks/01_audit.ipynb` confirming all 24 kept columns have data in all 20 countries
+- Added `MIN_AGE = 18` and `EXPECTED_APPLICANTS = 18_718` to `config.py`, plus a test (6 tests passing)
+
+**Broke / learned:**
+- Many Findex columns are follow-up questions only asked when an earlier answer was "yes", so a high missing share isn't always a data error
+- "Don't know", "refused" and "does not apply" codes (e.g. 3/4, or 4/5/6) must become missing values, not real answers
+- `fin24a`/`fin24b` looked useful but are missing for up to 48% of respondents in some countries; `fin24` covers the same idea with no gaps
+
+**Decisions:**
+- Kept 23 features chosen on four tests: data in all 20 countries, something a loan officer could ask, relevant to repayment risk, and not a follow-up question
+- `female` is kept for the fairness audit only, never as a model feature
+- **Dropped respondents under 18:** Findex surveys people aged 15+, but minors can't legally take loans. This removes 1,312 respondents aged 15–17 and 30 with no recorded age, so the pool goes from 20,060 respondents to **18,718 applicants** (Kenya: 952; smallest country: Liberia, 874)
