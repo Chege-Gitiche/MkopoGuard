@@ -41,3 +41,27 @@ Used ISO country codes instead of names because "Côte d'Ivoire" gets mangled
 - Kept 23 features chosen on four tests: data in all 20 countries, something a loan officer could ask, relevant to repayment risk, and not a follow-up question
 - `female` is kept for the fairness audit only, never as a model feature
 - **Dropped respondents under 18:** Findex surveys people aged 15+, but minors can't legally take loans. This removes 1,312 respondents aged 15–17 and 30 with no recorded age, so the pool goes from 20,060 respondents to **18,718 applicants** (Kenya: 952; smallest country: Liberia, 874)
+
+## 2026-10-06 — Step 1.3: Findex cleaning module
+
+**Goal:** Turn the raw survey codes into clean, readable data and keep adults only.
+
+**Did:**
+- Wrote `src/mkopoguard/data/clean.py`: selects and renames 29 columns, decodes answer codes into values, turns don't know / refused / does not apply into missing, and drops respondents under 18 or with no age
+- Added 18 unit tests (`tests/unit/test_clean.py`) using small hand-built rows with known answers
+- Added 4 real-data tests (`tests/data/test_findex_real.py`) that skip automatically in CI when the CSV isn't present
+- Saved `data/interim/findex_clean.parquet`: 18,718 adult applicants
+- Verified the last six column codes against the codebook
+- 28 tests passing locally (CI: 24 passed, 4 skipped)
+
+**Broke / learned:**
+- `AttributeError: module 'mkopoguard.config' has no attribute 'MIN_AGE'`: the notebook kernel kept an old copy of `config.py` in memory. Fixed by restarting the kernel; added `%load_ext autoreload` / `%autoreload 2` as the first cell to stop it happening again
+- `.map(dict)` turns any code not in the dictionary into NaN, which handles don't know / refused automatically
+- `Int8` (capital I) is pandas' nullable integer type; plain `int` columns can't hold missing values
+- `pytest.mark.parametrize` runs one test function over many inputs
+- `pytest.mark.skipif` lets data-dependent tests run locally but skip in CI
+
+**Decisions:**
+- Yes/no answers stored as 1/0; categorical answers stored as readable labels (e.g. `cash_only`, `could_not`)
+- Kept the 11 respondents aged 99: most likely the survey's top value for "99 or older"
+- The cleaning function raises a clear error if an expected column is missing, rather than failing later
