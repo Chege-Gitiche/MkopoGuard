@@ -12,3 +12,8 @@ def test_target_country_is_in_pool():
 
 def test_country_codes_are_iso3():
     assert all(len(c) == 3 and c.isupper() for c in config.POOL_COUNTRIES)
+
+
+def test_applicants_are_adults_only():
+    assert config.MIN_AGE == 18
+    assert config.EXPECTED_APPLICANTS < config.EXPECTED_POOL_ROWS

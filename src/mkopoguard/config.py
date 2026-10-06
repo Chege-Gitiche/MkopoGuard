@@ -39,3 +39,7 @@ POOL_COUNTRIES = (
 )
 TARGET_COUNTRY = "KEN"
 EXPECTED_POOL_ROWS = 20_060
+
+# Applicants: adults only (Findex surveys people aged 15+)
+MIN_AGE = 18
+EXPECTED_APPLICANTS = 18_718
