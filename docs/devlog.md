@@ -65,3 +65,24 @@ Used ISO country codes instead of names because "Côte d'Ivoire" gets mangled
 - Yes/no answers stored as 1/0; categorical answers stored as readable labels (e.g. `cash_only`, `could_not`)
 - Kept the 11 respondents aged 99: most likely the survey's top value for "99 or older"
 - The cleaning function raises a clear error if an expected column is missing, rather than failing later
+
+## 2026-10-06 — Step 1.4: Simulator design (data card)
+
+**Goal:** Decide on paper how each applicant's loan, mobile money statement and repayment outcome will be generated, before writing any simulator code.
+
+**Did:**
+- Wrote `docs/data_card.md`: what's real vs simulated, timeline, hidden traits, loan rules, transaction types, default rule, reproducibility and known limitations
+- Checked the mobile money split in the cleaned data: 9,848 applicants (53%) with mobile money, 8,870 (47%) without; Kenya 688 / 264
+
+**Broke / learned:**
+- A model can only learn what the simulator puts in. With no noise, or with the default rule built from the same features the model sees, scores look near-perfect but prove nothing
+- **Hidden traits** (true income, discipline, stress) drive both transactions and default, but the model only sees their traces in the statement. That's why mobile money data can add information beyond the survey, which the ablation in step 3.7 will test
+- A realistic target is ROC-AUC around 0.70–0.85; much higher would mean the simulator is too easy
+
+**Decisions:**
+- **Country incomes:** all 20 countries' income quintiles treated as Kenya-equivalent, with no GDP multiplier. Simpler, no extra data source, and the app scores Kenyans. Limitation recorded in the data card
+- **No mobile money means no statement:** these 8,870 applicants are thin-file borrowers (`has_statement = 0`), judged on survey answers alone. This matches the original proposal's focus on first-time and informal borrowers. Results will be reported for both groups
+- Gender and country are never used in the default rule, to keep the Phase 4 fairness check honest
+- Overall default rate target about 20% (band 15–25%); `SIMULATION_SEED = 42`
+
+**Next:** Step 1.5: build the population (load the 18,718 cleaned applicants and draw hidden traits with a fixed seed).
