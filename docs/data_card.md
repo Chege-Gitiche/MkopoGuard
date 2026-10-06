@@ -6,8 +6,6 @@
 - **Real:** each applicant's survey answers (23 features, see `findex_columns.md`).
 - **Simulated:** each applicant's loan, a 6-month mobile money statement, and whether they repaid.
 - This is **not real lending data**. A model trained on it learns the simulator's rules below, not real-world truth. **Not for real lending decisions.**
-Incomes ignore differences between countries: a quintile-3 earner in a richer country (e.g. South Africa) is simulated with the same income as one in Kenya.
-- Thin-file applicants (47%) are judged on survey answers only, so expect the model to be less accurate for them. Phase 3 reports results for both groups separately.
 
 ## 2. Simulation design
 
@@ -17,7 +15,7 @@ All numbers below are starting assumptions, checked and tuned in step 2.2 (EDA o
 
 - Each applicant gets an application date `T`, drawn at random within one year.
 - The statement covers the 180 days before `T`. The loan is paid out at `T`; the outcome is known at `T + term`.
-- **No transaction is ever generated on or after `T`.** This prevents data leakage and is enforced by a test (step 1.8).
+- **No transaction is ever generated on or after `T`.** This prevents data leakage and is enforced by a test.
 
 ### 2.2 Hidden traits (never given to the model)
 
@@ -47,8 +45,11 @@ All numbers below are starting assumptions, checked and tuned in step 2.2 (EDA o
 | 10,001–50,000 | 0.20 | 0.50 | 0.30 |
 | > 50,000 | 0.05 | 0.35 | 0.60 |
 
+**Decision: country income levels.** Income quintiles are measured *within* each country. Every country's quintiles are treated as Kenya-equivalent: the same income table applies everywhere, with no country multiplier. Reason: the app scores Kenyan applicants, and a multiplier would add an external data source for little benefit."
+
 ### 2.4 Mobile money statement
 
+**Decision: applicants without mobile money.** Only applicants with `has_mobile_money = 1` get a statement. The rest get `has_statement = 0` and missing transaction features: they are thin-file borrowers, the first-time and informal applicants the original proposal targets, and the model must judge them from survey answers alone. Their hidden traits still exist and still feed the default rule; they just leave no statement trace."
 
 Each transaction row: `applicant_id`, `timestamp`, `type`, `direction`, `amount_kes`, `balance_after`.
 
@@ -88,7 +89,7 @@ defaulted ~ Bernoulli(p(default))
 
 - **Never used in the default rule:** `is_female`, `country_code`. They're checked for fairness in Phase 4.
 - The rule uses the **true hidden values**. The model only sees noisy versions computed from the statement, so it can't be perfect. A realistic target is ROC-AUC around 0.70–0.85, typical of real credit scorecards. Much higher would mean the simulator is too easy.
-- Exact weights live in the simulator's code and are copied into this table once chosen (step 1.6).
+- Exact weights live in the simulator's code and are copied into this table once chosen.
 
 ### 2.6 Reproducibility
 
@@ -100,3 +101,5 @@ One seed, `SIMULATION_SEED = 42`, in `config.py`. The same seed must produce ide
 - Survey answers are self-reported and from 2021–2022.
 - The income table and transaction frequencies are informed assumptions, not measured values.
 - The model's performance shows how well it recovers these rules. It is not evidence of real-world accuracy.
+Incomes ignore differences between countries: a quintile-3 earner in a richer country (e.g. South Africa) is simulated with the same income as one in Kenya.
+- Thin-file applicants (47%) are judged on survey answers only, so expect the model to be less accurate for them. Phase 3 reports results for both groups separately.
