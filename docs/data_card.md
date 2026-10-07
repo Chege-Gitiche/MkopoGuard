@@ -125,3 +125,14 @@ Set in `src/mkopoguard/data/defaults.py`. Noise: Normal(0, 0.5). `b0` is solved 
 **Results on the generated data:** default rate 19.9% (Kenya 16.1%); ceiling ROC-AUC using the true probabilities 0.84.
 
 **Fairness note:** women default at 21.2% vs 18.3% for men even though gender is never used (a test proves it). The gap comes through correlated features such as income and employment. Phase 4 audits the model for it.
+
+## 5. Leakage controls (step 1.8)
+
+| Layer | What it stops | Where |
+| --- | --- | --- |
+| Generator | Every transaction is capped 10 seconds before the application date | `data/transactions.py` (`LAST_SECOND`) |
+| Schema | Data with any transaction outside its statement window is never saved | `data/schemas.py` |
+| Time-leakage tests | Prove the cap and the schema work, including a planted leak and a worst-case stress test | `tests/unit/test_leakage.py`, `tests/unit/test_schemas.py` |
+| Column guard | Hidden traits (`hidden_*`), the outcome, IDs, dates and `is_female` can never be model inputs | `features/columns.py` |
+
+The model may use 27 applicant columns: 23 survey features, `country_code` (kept or dropped in Phase 3), `has_statement`, `loan_amount_kes` and `term_months`, plus statement features built in Phase 2 from transactions inside the window only.
