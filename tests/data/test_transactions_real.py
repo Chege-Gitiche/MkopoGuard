@@ -41,3 +41,14 @@ def test_no_transaction_outside_the_statement_window(applicants, transactions):
 
 def test_no_negative_balances(transactions):
     assert (transactions["balance_after"] >= 0).all()
+
+
+def test_default_rate_is_in_the_band_overall_and_in_kenya(applicants):
+    low, high = config.DEFAULT_RATE_BAND
+    assert low <= applicants["defaulted"].mean() <= high
+    kenya = applicants.loc[applicants["country_code"] == "KEN", "defaulted"]
+    assert low <= kenya.mean() <= high
+
+
+def test_every_applicant_has_an_outcome(applicants):
+    assert applicants["defaulted"].notna().all()

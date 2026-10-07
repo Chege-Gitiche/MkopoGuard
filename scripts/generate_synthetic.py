@@ -8,6 +8,7 @@ import time
 import pandas as pd
 
 from mkopoguard import config
+from mkopoguard.data.defaults import add_defaults
 from mkopoguard.data.loans import add_loans
 from mkopoguard.data.transactions import add_behaviour, generate_transactions
 
@@ -37,6 +38,13 @@ def main() -> None:
     transactions = generate_transactions(applicants)
     print(f"Transactions: {len(transactions):,} in {time.time() - start:.0f}s")
     print(transactions["type"].value_counts().to_string())
+
+    # Part 3: defaults
+    applicants = add_defaults(applicants)
+    print(f"Default intercept b0: {applicants.attrs['default_intercept']:.3f}")
+    print(f"Default rate: {applicants['defaulted'].mean():.1%}", end="")
+    kenya = applicants.loc[applicants["country_code"] == "KEN", "defaulted"].mean()
+    print(f" (Kenya {kenya:.1%})")
 
     config.DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
     applicants.to_parquet(APPLICANTS_PATH, index=False)

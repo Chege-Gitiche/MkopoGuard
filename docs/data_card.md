@@ -103,3 +103,25 @@ One seed, `SIMULATION_SEED = 42`, in `config.py`. The same seed must produce ide
 - The model's performance shows how well it recovers these rules. It is not evidence of real-world accuracy.
 Incomes ignore differences between countries: a quintile-3 earner in a richer country (e.g. South Africa) is simulated with the same income as one in Kenya.
 - Thin-file applicants (47%) are judged on survey answers only, so expect the model to be less accurate for them. Phase 3 reports results for both groups separately.
+
+## 4. Final default-rule weights
+
+Set in `src/mkopoguard/data/defaults.py`. Noise: Normal(0, 0.5). `b0` is solved automatically so the average default probability is 20% (on the generated data: b0 = -2.704).
+
+| Driver | Weight |
+| --- | --- |
+| log(loan-to-income ratio) | +0.6 |
+| Income pattern: seasonal (vs salaried) | +0.3 |
+| Income pattern: irregular (vs salaried) | +0.5 |
+| Stress | +0.5 |
+| True overdraft propensity (0-1) | +1.5 |
+| True betting share of income (0-0.3) | +4.0 |
+| Low discipline (= -discipline) | +0.8 |
+| Saved in a savings club | -0.4 |
+| Saved in the past year | -0.3 |
+| In the workforce | -0.3 |
+| Age 18-24 | +0.2 |
+
+**Results on the generated data:** default rate 19.9% (Kenya 16.1%); ceiling ROC-AUC using the true probabilities 0.84.
+
+**Fairness note:** women default at 21.2% vs 18.3% for men even though gender is never used (a test proves it). The gap comes through correlated features such as income and employment. Phase 4 audits the model for it.

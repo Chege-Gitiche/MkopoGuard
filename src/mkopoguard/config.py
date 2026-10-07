@@ -70,3 +70,7 @@ TERM_PROBS_BY_AMOUNT = (
     (50_000, (0.20, 0.50, 0.30)),
     (LOAN_MAX, (0.05, 0.35, 0.60)),
 )
+
+# --- Defaults (data card section 2.5) ---
+DEFAULT_TARGET_RATE = 0.20
+DEFAULT_RATE_BAND = (0.15, 0.25)
