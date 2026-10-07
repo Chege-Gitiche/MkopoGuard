@@ -3,13 +3,22 @@
 Run from the project root:  python scripts/generate_synthetic.py
 """
 
+import time
+
 import pandas as pd
 
 from mkopoguard import config
 from mkopoguard.data.loans import add_loans
+from mkopoguard.data.transactions import add_behaviour, generate_transactions
 
 IN_PATH = config.DATA_INTERIM / "population.parquet"
 APPLICANTS_PATH = config.DATA_PROCESSED / "applicants.parquet"
+TRANSACTIONS_PATH = config.DATA_PROCESSED / "transactions.parquet"
+
+
+def fingerprint(df: pd.DataFrame) -> int:
+    """One number summarising a whole table: identical runs must print the same value."""
+    return int(pd.util.hash_pandas_object(df, index=False).sum())
 
 
 def main() -> None:
@@ -17,17 +26,25 @@ def main() -> None:
 
     # Part 1: loans
     applicants = add_loans(population)
+    amounts = applicants["loan_amount_kes"]
+    print(f"Loans: median KES {amounts.median():,.0f}", end="")
+    print(f", min {amounts.min():,}, max {amounts.max():,}")
+
+    # Part 2: hidden spending behaviour and statements
+    applicants = add_behaviour(applicants)
+    start = time.time()
+    print("Generating statements (about 30-60 seconds)...")
+    transactions = generate_transactions(applicants)
+    print(f"Transactions: {len(transactions):,} in {time.time() - start:.0f}s")
+    print(transactions["type"].value_counts().to_string())
 
     config.DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
     applicants.to_parquet(APPLICANTS_PATH, index=False)
+    transactions.to_parquet(TRANSACTIONS_PATH, index=False)
 
-    amounts = applicants["loan_amount_kes"]
-    print(f"{len(applicants):,} applicants saved to {APPLICANTS_PATH}")
-    print(f"Loan amount (KES): median {amounts.median():,.0f}", end="")
-    print(f", min {amounts.min():,}, max {amounts.max():,}")
-    print("Term (months):", applicants["term_months"].value_counts().sort_index().to_dict())
-    fingerprint = pd.util.hash_pandas_object(applicants, index=False).sum()
-    print(f"Fingerprint (seed {config.SIMULATION_SEED}): {fingerprint}")
+    print(f"Saved {len(applicants):,} applicants and {len(transactions):,} transactions")
+    print(f"Applicants fingerprint:   {fingerprint(applicants)}")
+    print(f"Transactions fingerprint: {fingerprint(transactions)}")
 
 
 if __name__ == "__main__":
