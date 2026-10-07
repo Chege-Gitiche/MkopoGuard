@@ -54,3 +54,19 @@ STATEMENT_DAYS = 180  # statement covers the 180 days before the application dat
 INCOME_MEDIAN_BY_QUINTILE = {1: 4_000, 2: 7_000, 3: 11_000, 4: 18_000, 5: 32_000}
 OUT_OF_WORKFORCE_INCOME_FACTOR = 0.5
 INCOME_SIGMA = 0.5  # spread of the log-normal income draw
+
+# --- Loans (data card section 2.3) ---
+LOAN_RATIO_MEDIAN = 1.0  # loan-to-monthly-income ratio
+LOAN_RATIO_SIGMA = 0.5
+LOAN_RATIO_MIN = 0.3
+LOAN_RATIO_MAX = 3.0
+LOAN_ROUND_TO = 500  # KES
+LOAN_MIN = 1_000
+LOAN_MAX = 100_000
+TERM_OPTIONS = (1, 3, 6)  # months
+# (largest amount in band, probabilities for 1, 3, 6 months)
+TERM_PROBS_BY_AMOUNT = (
+    (10_000, (0.60, 0.30, 0.10)),
+    (50_000, (0.20, 0.50, 0.30)),
+    (LOAN_MAX, (0.05, 0.35, 0.60)),
+)
