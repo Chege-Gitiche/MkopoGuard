@@ -43,3 +43,14 @@ EXPECTED_POOL_ROWS = 20_060
 # Applicants: adults only (Findex surveys people aged 15+)
 MIN_AGE = 18
 EXPECTED_APPLICANTS = 18_718
+
+# --- Simulation (see docs/data_card.md) ---
+SIMULATION_SEED = 42
+APPLICATION_START = "2025-01-01"  # application dates are drawn within this year
+APPLICATION_END = "2025-12-31"
+STATEMENT_DAYS = 180  # statement covers the 180 days before the application date
+
+# Median monthly income (KES) by income quintile; all countries treated as Kenya-equivalent
+INCOME_MEDIAN_BY_QUINTILE = {1: 4_000, 2: 7_000, 3: 11_000, 4: 18_000, 5: 32_000}
+OUT_OF_WORKFORCE_INCOME_FACTOR = 0.5
+INCOME_SIGMA = 0.5  # spread of the log-normal income draw
