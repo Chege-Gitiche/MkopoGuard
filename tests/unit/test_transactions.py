@@ -150,3 +150,39 @@ def test_only_applicants_with_a_statement_get_transactions():
     applicants["has_statement"] = [1, 0, 1, 0]
     ids = set(generate_transactions(applicants)["applicant_id"])
     assert ids == {"A-00001", "A-00003"}
+
+
+# --- step 2.2: cash withdrawals and the overdraft limit ----------------------
+
+
+def test_cash_is_withdrawn_only_right_after_money_arrives():
+    stmt = statement_for(make_applicant())
+    cash_rows = stmt.index[stmt["type"] == "cash_out"]
+    assert len(cash_rows) > 0
+    row_before = stmt.loc[cash_rows - 1, "type"]
+    assert set(row_before) <= {"income_in", "p2p_in", "overdraft_repay"}
+
+
+def test_balances_stay_realistic_over_six_months():
+    """Money must not pile up: the final balance stays below 4 months of income."""
+    for number in range(1, 31):
+        a = make_applicant(number, hidden_betting_share=0.0)
+        final = statement_for(a)["balance_after"].iloc[-1]
+        assert final < 4 * a["hidden_monthly_income_kes"]
+
+
+def test_overdraft_debt_never_exceeds_the_limit():
+    for number in range(1, 31):
+        a = make_applicant(
+            number,
+            hidden_monthly_income_kes=4_000.0,
+            hidden_betting_share=0.3,
+            hidden_overdraft_repay_share=0.1,
+        )
+        stmt = statement_for(a)
+        owed = np.where(
+            stmt["type"] == "overdraft_borrow",
+            stmt["amount_kes"],
+            np.where(stmt["type"] == "overdraft_repay", -stmt["amount_kes"], 0),
+        ).cumsum()
+        assert owed.max() <= a["hidden_monthly_income_kes"]

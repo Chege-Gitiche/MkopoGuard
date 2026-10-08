@@ -8,6 +8,7 @@ import time
 import pandas as pd
 
 from mkopoguard import config
+from mkopoguard.data.checks import assert_plausible
 from mkopoguard.data.defaults import add_defaults
 from mkopoguard.data.loans import add_loans
 from mkopoguard.data.schemas import validate_dataset
@@ -50,6 +51,9 @@ def main() -> None:
     # Step 1.7: refuse to save data that breaks any rule
     validate_dataset(applicants, transactions)
     print("Validation: all schema checks passed")
+    report = assert_plausible(applicants, transactions)
+    print("Plausibility: all checks passed")
+    print(report.round(3).to_string())
 
     config.DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
     applicants.to_parquet(APPLICANTS_PATH, index=False)

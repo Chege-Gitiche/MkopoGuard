@@ -136,3 +136,17 @@ Set in `src/mkopoguard/data/defaults.py`. Noise: Normal(0, 0.5). `b0` is solved 
 | Column guard | Hidden traits (`hidden_*`), the outcome, IDs, dates and `is_female` can never be model inputs | `features/columns.py` |
 
 The model may use 27 applicant columns: 23 survey features, `country_code` (kept or dropped in Phase 3), `has_statement`, `loan_amount_kes` and `term_months`, plus statement features built in Phase 2 from transactions inside the window only.
+- The 40% mobile-money rule used to select countries was unweighted and included respondents aged 15–17. Weighted and adults-only, seven pool countries sit at 37–39% and Mozambique at 29% (see `notebooks/02_eda.ipynb`). The rule only served to pick mobile-money markets, so the pool is kept as is.
+
+## 6. Changes after synthetic EDA (step 2.2)
+
+EDA on the step 1.6 data found two implausible results: the median applicant ended the statement holding 4.3 months of income (statements spent only about half of income), and overdraft debt reached 11.6 months of income. Two changes fixed them:
+
+| Change | Rule |
+| --- | --- |
+| New transaction type `cash_out` (out) | After every `income_in` and `p2p_in`, the applicant withdraws a fixed share of it as cash. The share is drawn once per applicant, uniform 45–75% |
+| Overdraft credit limit | Total overdraft owed can never exceed 1 month of income |
+
+Result: median final balance 0.56 months of income (99th percentile 3.5); 23% of statement holders use overdrafts; debt capped at 1.0 month. 2,121,944 transactions. Default outcomes are unchanged (they depend only on hidden traits).
+
+**Plausibility checks** (`data/checks.py`) now run every time data is generated, with limits on default rates, loan size, transactions per applicant and per day, final balances, overdraft use and debt. The step 1.6 data fails exactly the three balance and debt checks.

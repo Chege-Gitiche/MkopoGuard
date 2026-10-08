@@ -24,6 +24,7 @@ TRANSACTION_DIRECTIONS = {
     "airtime": "out",
     "betting": "out",
     "overdraft_repay": "out",
+    "cash_out": "out",
 }
 
 

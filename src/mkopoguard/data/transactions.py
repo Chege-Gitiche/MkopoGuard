@@ -7,6 +7,9 @@ Data card sections 2.2 and 2.4. Two stages, each with its own random stream:
 Every applicant's statement uses its own random stream, seeded from
 (SIMULATION_SEED, TRANSACTION_STAGE, applicant number), so one applicant's statement
 never depends on anyone else's.
+
+Step 2.2 changes: a cash_out withdrawal after each inflow (most mobile money is withdrawn
+as cash for daily spending), and an overdraft credit limit of one month's income.
 """
 
 import numpy as np
@@ -22,12 +25,15 @@ MONTHS = DAYS // 30
 SECONDS_PER_DAY = 86_400
 LAST_SECOND = DAYS * SECONDS_PER_DAY - 10  # every transaction ends before the application date
 
-OVERDRAFT_MAX_BORROW = 5_000  # KES; larger shortfalls can't be covered and the payment is skipped
+OVERDRAFT_MAX_BORROW = 5_000  # KES per shortfall; larger ones can't be covered
 OVERDRAFT_ROUND_TO = 100
+OVERDRAFT_LIMIT_MONTHS = 1.0  # total overdraft owed can't exceed this many months of income
 
 INFLOW_TYPES = {"income_in", "p2p_in", "overdraft_borrow"}
 REPAY_TRIGGERS = {"income_in", "p2p_in"}  # money arriving gives a chance to repay overdrafts
 REPAY_STRICTNESS = 4  # chance of repaying on each inflow = repay_share ** 4
+CASH_TRIGGERS = {"income_in", "p2p_in"}  # money arriving is partly withdrawn as cash
+CASH_SHARE_RANGE = (0.45, 0.75)  # share of each inflow withdrawn, drawn once per applicant
 
 COLUMNS = ["applicant_id", "timestamp", "type", "direction", "amount_kes", "balance_after"]
 
@@ -149,11 +155,13 @@ def statement_for(a, seed: int = config.SIMULATION_SEED) -> pd.DataFrame:
     rng = np.random.default_rng([seed, TRANSACTION_STAGE, number])
 
     balance = float(round(a["hidden_monthly_income_kes"] * rng.uniform(0, 0.5)))  # opening balance
+    cash_share = rng.uniform(*CASH_SHARE_RANGE)
     t, kinds, amounts = _scheduled_events(a, rng)
     order = np.argsort(t, kind="stable")
 
     uses_overdraft = a["hidden_uses_overdraft"] == 1
     repay_share = a["hidden_overdraft_repay_share"]
+    limit = OVERDRAFT_LIMIT_MONTHS * a["hidden_monthly_income_kes"]
     owed = 0
     rows = []  # (seconds, type, direction, amount, balance_after)
 
@@ -171,17 +179,26 @@ def statement_for(a, seed: int = config.SIMULATION_SEED) -> pd.DataFrame:
                     rows.append(
                         (min(sec + 1, LAST_SECOND), "overdraft_repay", "out", repay, balance)
                     )
-        elif amt <= balance:
+            # Part of each inflow is withdrawn as cash for daily spending
+            if kind in CASH_TRIGGERS:
+                cash = int(min(round(amt * cash_share, -1), balance))
+                if cash > 0:
+                    balance -= cash
+                    rows.append((min(sec + 2, LAST_SECOND), "cash_out", "out", cash, balance))
+            continue
+
+        shortfall = amt - balance
+        borrow = int(np.ceil(shortfall / OVERDRAFT_ROUND_TO) * OVERDRAFT_ROUND_TO)
+        if amt <= balance:
             balance -= amt
             rows.append((sec, kind, "out", amt, balance))
-        elif uses_overdraft and amt - balance <= OVERDRAFT_MAX_BORROW:
-            borrow = int(np.ceil((amt - balance) / OVERDRAFT_ROUND_TO) * OVERDRAFT_ROUND_TO)
+        elif uses_overdraft and shortfall <= OVERDRAFT_MAX_BORROW and owed + borrow <= limit:
             balance += borrow
             owed += borrow
             rows.append((sec, "overdraft_borrow", "in", borrow, balance))
             balance -= amt
             rows.append((min(sec + 1, LAST_SECOND), kind, "out", amt, balance))
-        # otherwise: not enough money and no overdraft, so the payment doesn't happen
+        # otherwise: not enough money and no overdraft room, so the payment doesn't happen
 
     stmt = pd.DataFrame(
         rows, columns=["seconds", "type", "direction", "amount_kes", "balance_after"]
