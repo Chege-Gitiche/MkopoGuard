@@ -50,8 +50,9 @@ def apply_style() -> None:
 def _finish(ax, title: str, subtitle: str, percent_axis: str) -> None:
     ax.set_title(title, pad=24)
     ax.text(0, 1.02, subtitle, transform=ax.transAxes, color=TEXT_MUTED, fontsize=9.5)
-    axis = ax.xaxis if percent_axis == "x" else ax.yaxis
-    axis.set_major_formatter(PercentFormatter(1.0, decimals=0))
+    if percent_axis in ("x", "y"):
+        axis = ax.xaxis if percent_axis == "x" else ax.yaxis
+        axis.set_major_formatter(PercentFormatter(1.0, decimals=0))
     ax.set_axisbelow(True)
 
 
@@ -59,20 +60,32 @@ def ranked_bars(
     shares: pd.Series,
     title: str,
     subtitle: str,
-    highlight: str = "KEN",
+    highlight: str | None = "KEN",
     labels: dict | None = None,
+    percent: bool = True,
+    baseline: float = 0.0,
 ):
-    """Horizontal bars, largest at the top, with one highlighted entry."""
+    """Horizontal bars, largest at the top, with one highlighted entry.
+
+    percent=False shows plain decimals (e.g. AUC). baseline sets where bars start, for
+    measures whose "nothing" point isn't zero (AUC's is 0.5).
+    """
     shares = shares.sort_values()
     fig, ax = plt.subplots(figsize=(7, 0.32 * len(shares) + 1.4))
-    colours = [BLUE if code == highlight else GREY for code in shares.index]
+    if highlight is None:
+        colours = [BLUE] * len(shares)
+    else:
+        colours = [BLUE if code == highlight else GREY for code in shares.index]
     names = [labels.get(code, code) if labels else code for code in shares.index]
-    ax.barh(names, shares.to_numpy(), color=colours, height=0.7)
+    values = shares.to_numpy()
+    ax.barh(names, values - baseline, left=baseline, color=colours, height=0.7)
     ax.grid(axis="y", visible=False)
-    for y, value in enumerate(shares.to_numpy()):
-        ax.text(value + 0.01, y, f"{value:.0%}", va="center", fontsize=9, color=TEXT_MUTED)
-    ax.set_xlim(0, min(1.0, shares.max() + 0.12))
-    _finish(ax, title, subtitle, "x")
+    span = shares.max() - baseline
+    for y, value in enumerate(values):
+        text = f"{value:.0%}" if percent else f"{value:.3f}"
+        ax.text(value + span * 0.02, y, text, va="center", fontsize=9, color=TEXT_MUTED)
+    ax.set_xlim(baseline, min(1.0, shares.max() + span * 0.15))
+    _finish(ax, title, subtitle, "x" if percent else "none")
     return fig
 
 
