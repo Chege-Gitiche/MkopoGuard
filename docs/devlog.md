@@ -213,3 +213,129 @@ Used ISO country codes instead of names because "Côte d'Ivoire" gets mangled
 **Phase 1 summary:** 18,718 applicants from real Findex data across 20 countries; 1.7 million simulated transactions; 19.9% default rate; reproducible from one command; validated by schemas; documented in the data card; 134 tests passing.
 
 **Next:** Phase 2, step 2.1: EDA on the real Findex data
+
+## 2026-10-08 — Step 2.1: EDA on the real Findex data
+
+**Goal:** Describe who the 18,718 applicants are, using only the real survey answers.
+
+**Did:**
+- Wrote `src/mkopoguard/stats.py`: `weighted_share` (survey-weighted share per group) and `pool_average` (gives each of the 20 countries equal weight), with 7 unit tests
+- Wrote `src/mkopoguard/viz.py`: one colour-blind-safe chart style for the whole project (blue = Kenya / first series, orange = second, grey = other countries), with `ranked_bars` and `paired_bars`
+- Built `notebooks/02_eda.ipynb` and saved five charts to `docs/img/` (`eda_01` to `eda_05`), each with a one-line takeaway
+- Recorded a new limitation in the data card
+
+**Findings:**
+- Mobile money: Kenya leads at 71%; Mozambique lowest at 29%
+- Gender gap: women trail men for bank accounts (32% vs 43%) and mobile money (43% vs 51%), so fewer women will have a statement — a fairness risk for Phase 4
+- Mobile money doubles with income across the pool (31% → 63%); Kenya 51% → 83%
+- 77% of Kenyan adults borrowed last year, but only 21% from a financial institution vs 55% from family or friends — most borrowers have no formal credit history
+- 20% of the poorest quintile couldn't raise emergency money in 30 days vs 6% of the richest
+
+**Broke / learned:**
+- Survey weights only balance people **within** one country, so shares must be computed per country first and then averaged, never pooled
+- **The 40% country rule was unweighted and included 15–17 year olds.** Weighted and adults-only, seven pool countries sit at 37–39% and Mozambique at 29%. Kept the pool (the rule only served to pick mobile-money markets) and documented it honestly in the data card
+- Overlapping axis labels on the borrowing chart: fixed by wrapping long labels
+- Chart titles should state the finding, not just the topic
+
+**Decisions:**
+- Replaced the guide's "borrowing by urban/rural" chart (urban/rural was dropped in the audit) with borrowing sources and lack of emergency funds
+- Didn't chart Kenya by income quintile for emergency funds: about 190 respondents per quintile is too few for a reliable share
+
+## 2026-10-08 — Step 2.2: EDA on the synthetic data (simulator fix)
+
+**Goal:** Check that the simulated loans, statements and defaults behave as the data card says.
+
+**Did:**
+- Explored the generated data: default rates by country (16–27%) and income quintile (25% → 16%), loan amounts (median KES 11,000), transactions per applicant, busiest days (max 18 a day), balances
+- **Found two implausible results** and fixed them in `data/transactions.py`:
+  1. Money piled up: the median applicant ended the statement holding **4.3 months of income** (some over KES 1.5 million), because statements only spent about half of income
+  2. Overdraft debt had no ceiling: some applicants owed **11.6× monthly income**
+- Fix 1: new `cash_out` transaction — after every income or family payment, each applicant withdraws a fixed share (45–75%, drawn once per person) as cash
+- Fix 2: overdraft credit limit of one month's income
+- Added `cash_out` to the schema's allowed types and 3 regression tests to `test_transactions.py`
+- Wrote `src/mkopoguard/data/checks.py`: 12 plausibility limits (default rates, loan size, transactions per applicant and per day, final balances, overdraft use and debt), now enforced every time data is generated; 15 unit tests + 1 real-data check
+- Added a `histogram` helper to `viz.py`; built `notebooks/03_synthetic_eda.ipynb` with five charts (`eda_06` to `eda_10`), including a before/after chart of final balances
+- Added section 6 to the data card documenting the changes
+
+**Results after the fix:**
+- Median final balance 0.56 months of income (99th percentile 3.5); overdraft debt capped at 1.0 month; 23% of statement holders use overdrafts
+- Repaid share: 22% for the least disciplined quarter vs 77% for the most — a much clearer signal than before
+- 2,121,944 transactions; transactions fingerprint 11234098556618059811
+- **Applicants fingerprint unchanged (15016200708709864706) and still 3,723 defaults** — default outcomes depend only on hidden traits, so the fix didn't touch them
+
+**Broke / learned:**
+- **Schemas and plausibility checks answer different questions:** schemas ask "is each value allowed?", plausibility asks "does the data as a whole make sense?" Every value in the old data was valid, but the whole was unbelievable
+- **Negative test for the checks:** the old step 1.6 data fails exactly the three balance and debt checks and nothing else, proving the checks target the real problem
+- Adding one random draw (`cash_share`) shifts every later number in that applicant's stream, which is why the transactions fingerprint changed; separate streams kept applicants and defaults identical
+- Loans are rounded to KES 500, so narrow histogram bins showed false gaps at the low end — used wider bins
+- The transactions chart has two humps: irregular earners (median 273 rows) get many small payments each followed by a withdrawal, vs salaried (139) and seasonal (103)
+
+**Decisions:**
+- Kept a copy of the old statements (`data/interim/transactions_step16.parquet`) for the before/after chart
+- Plausibility limits are judgement calls, recorded in the data card
+
+## 2026-10-08 — Steps 2.3 and 2.4: Statement features and known-answer tests
+
+**Goal:** Turn 2.1 million transactions into one row of features per applicant, and prove each feature is calculated correctly.
+
+**Did:**
+- Wrote `src/mkopoguard/features/transactions.py`: 17 statement features (all prefixed `stmt_`) covering income, spending, overdrafts, balances, activity and loan size relative to statement income
+- Wrote `scripts/build_features.py`: builds `data/processed/features.parquet` — 18,718 rows × 47 columns (allowed model inputs + statement features + `defaulted` + `is_female` for the fairness audit). Hidden traits never enter the file
+- 14 known-answer unit tests (`tests/unit/test_features.py`) and 4 real-data checks
+- Built `notebooks/04_features.ipynb` with a signal-strength chart (`features_01_signal_strength.png`)
+- Extended `ranked_bars` to show non-percentage values and start bars at a baseline (AUC's "no signal" point is 0.5)
+
+**Findings:**
+- Strongest single feature: betting share (ROC-AUC 0.653), then overdraft behaviour (0.58–0.59)
+- Money from family/friends has no signal (0.502), as designed — remittances aren't in the default rule
+- "Days since last income" looks backwards (recent income = riskier) but is right: irregular earners are paid every few days, and irregular income is riskier
+- All 17 together in a simple logistic regression: ROC-AUC 0.71 (statement holders only)
+- Overlap: average and median inflow 0.92 correlated; overdraft features 0.74–0.82
+
+**Broke / learned:**
+- **A test found a real edge case:** a statement with income but no spending got missing spending shares (division by zero outflow). Never happens in the generated data, but an uploaded statement in the API could. Fixed: no spending means a 0% share, locked in by a regression test
+- **Training–serving skew:** the same feature function runs in training and in the API, so features can't be computed differently in the two places
+- Empty months must count as zero income, or someone paid once in six months looks perfectly steady
+- Volatility is the coefficient of variation (std ÷ mean), which judges small and large earners on the same scale
+- Known-answer tests: e.g. 18,000 in one month and nothing in five gives volatility √5 ≈ 2.24, worked out on paper first
+- The feature function drops transactions on/after the application date or older than 180 days itself — a fifth leakage layer, tested with planted KES 99,999 bets
+
+**Decisions:**
+- Thin-file applicants get missing values, not zeros: "no statement" is different from "spent nothing on betting"
+- Dropped the guide's "distinct income sources" feature: statements don't record who sent money (guide updated)
+- Step 2.4 is covered by the known-answer tests written here
+
+**Next:** Step 2.5: preprocessing pipeline.
+
+## 2026-10-08 — Step 2.5: Preprocessing pipeline
+
+**Goal:** Turn the model table into clean numbers inside one scikit-learn pipeline that can't leak.
+
+**Did:**
+- Wrote `src/mkopoguard/features/preprocess.py`: three lanes in a `ColumnTransformer`
+  - Numbers (21): log money amounts → clip to 1st/99th percentile → median fill → scale
+  - Yes/no (16): fill with the most common answer
+  - Categories (6): missing answers become a `missing` category → one-hot
+- Wrote a custom `Winsorizer` transformer (scikit-learn has no "clip to learned percentiles" step)
+- `make_pipeline(model)` wraps preprocessing and model into one object to fit, cross-validate and save together
+- 13 unit tests + 1 real-data check (192 passing)
+- Added a pipeline check to `notebooks/04_features.ipynb`
+
+**Results:**
+- 43 input columns → 68 clean numeric columns, no missing or infinite values, about 1 second to fit
+- Quick logistic regression (5-fold CV, all applicants): ROC-AUC **0.720** without country, 0.719 with it
+
+**Broke / learned:**
+- **Everything learned (medians, clip bounds, means, category lists) is learned in `fit()` only.** Inside a Pipeline, cross-validation re-learns it per fold and the test set never contributes — a test proves transforming new data never changes what was learned
+- Logging money first stops a few huge earners squashing everyone else into a tiny range after scaling
+- `handle_unknown="ignore"` means an unseen category at prediction time doesn't crash the API
+- `remainder="drop"` silently excludes `applicant_id`, `defaulted` and `is_female` — one more barrier against leakage
+- Pandas nullable integers (`Int8` with `<NA>`) need converting to floats before scikit-learn's imputers
+- `tmp_path` gives each pytest test its own temporary folder
+
+**Decisions:**
+- Thin-file statement features are filled with the training median; `has_statement` tells the model they're filled in
+- `country_code` is off by default (adds nothing); Phase 3 confirms properly
+- Three tests protect the future API: one applicant alone matches the same applicant in a batch, a saved/reloaded pipeline gives identical output, and unknown categories don't crash
+
+**Next:** Step 2.6: train/validation/test split (70/15/15, stratified by country and default).
