@@ -82,3 +82,8 @@ SPLIT_FILE = PROJECT_ROOT / "data" / "splits" / "applicant_split.csv"
 # --- Experiment tracking (step 3.1) ---
 MLRUNS_DIR = PROJECT_ROOT / "mlruns"
 MLFLOW_EXPERIMENT = "mkopoguard"
+
+# --- Evaluation (step 3.2, see docs/evaluation_plan.md) ---
+PROVISIONAL_THRESHOLD = 0.20  # decline if p >= this, until step 3.11 picks the real threshold
+LEAKAGE_ALARM = {"roc_auc": 0.86, "pr_auc": 0.65}  # above the true-probability ceiling
+BOOTSTRAP_RESAMPLES = 1_000
