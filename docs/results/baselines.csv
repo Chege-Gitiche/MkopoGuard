@@ -1,5 +1,5 @@
-name,cv_pr_auc,cv_pr_auc_std,val_pr_auc,val_roc_auc,val_ks,val_brier,val_ece,val_recall,val_approval_rate,val_kenya_pr_auc,val_thin_file_pr_auc
-logistic_with_country,0.394,0.0274,0.4097,0.7165,0.3258,0.1426,0.0104,0.6607,0.5972,0.3617,0.3834
-logistic,0.3926,0.029,0.4119,0.7174,0.3366,0.1424,0.0106,0.6554,0.6015,0.3897,0.3862
-logistic_balanced,0.3921,0.0287,0.411,0.7169,0.3308,0.212,0.2516,0.9786,0.0951,0.3775,0.3829
-dummy,0.1991,0.0009,0.1994,0.5,0.0,0.1597,0.0004,0.0,1.0,0.156,0.2348
+name,cv_pr_auc,cv_pr_auc_std,train_pr_auc,overfit_gap,val_pr_auc,val_roc_auc,val_ks,val_brier,val_ece,val_recall,val_approval_rate,val_kenya_pr_auc,val_thin_file_pr_auc
+logistic_with_country,0.394,0.0274,0.4076,-0.0022,0.4097,0.7165,0.3258,0.1426,0.0104,0.6607,0.5972,0.3617,0.3834
+logistic,0.3926,0.029,0.405,-0.0068,0.4119,0.7174,0.3366,0.1424,0.0106,0.6554,0.6015,0.3897,0.3862
+logistic_balanced,0.3921,0.0287,0.4024,-0.0087,0.411,0.7169,0.3308,0.212,0.2516,0.9786,0.0951,0.3775,0.3829
+dummy,0.1991,0.0009,0.1991,-0.0004,0.1994,0.5,0.0,0.1597,0.0004,0.0,1.0,0.156,0.2348

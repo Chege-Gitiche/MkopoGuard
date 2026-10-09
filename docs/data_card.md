@@ -150,3 +150,4 @@ EDA on the step 1.6 data found two implausible results: the median applicant end
 Result: median final balance 0.56 months of income (99th percentile 3.5); 23% of statement holders use overdrafts; debt capped at 1.0 month. 2,121,944 transactions. Default outcomes are unchanged (they depend only on hidden traits).
 
 **Plausibility checks** (`data/checks.py`) now run every time data is generated, with limits on default rates, loan size, transactions per applicant and per day, final balances, overdraft use and debt. The step 1.6 data fails exactly the three balance and debt checks.
+- The default rule is additive in log-odds (a weighted sum of drivers through a logistic curve), with no interactions between drivers. Linear models therefore suit this data well, and tree models' usual advantage on real credit data (capturing combinations of risk factors) cannot show here. Found in step 3.4.

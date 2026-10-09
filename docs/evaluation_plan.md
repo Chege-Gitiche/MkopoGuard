@@ -45,3 +45,18 @@ Written in step 3.2, **before any model was trained**. Every model in Phase 3 is
 Decisions:
 - **country_code is dropped** for good: no gain overall (a tie), and worse for Kenyans (val PR-AUC 0.362 vs 0.390).
 - **Class weights don't improve ranking but ruin calibration** (ECE 0.011 → 0.252; approval at the 0.20 threshold falls from 60% to 10%). Any imbalance method in step 3.5 must be followed by calibration (step 3.10) before its probabilities are used.
+
+## Candidates (step 3.4)
+
+| Model | CV PR-AUC | vs logistic | Train PR-AUC | Val PR-AUC | Overfit gap |
+| --- | --- | --- | --- | --- | --- |
+| **logistic** | **0.393** | — | 0.405 | 0.412 | −0.007 |
+| XGBoost | 0.381 | −0.012 | 0.568 | 0.400 | 0.168 |
+| Random forest | 0.378 | −0.014 | 0.535 | 0.381 | 0.154 |
+| LightGBM | 0.378 | −0.015 | 0.628 | 0.395 | 0.233 |
+
+**No tree model beats logistic regression.** Two reasons, both checked:
+1. The trees overfit: training PR-AUC 0.54–0.63 vs validation 0.38–0.40 (see `docs/img/models_01_overfitting.png`).
+2. The simulated default rule is a weighted sum passed through a logistic curve, with no interactions for trees to find. Given the true hidden drivers directly, logistic regression still beats XGBoost (validation PR-AUC 0.580 vs 0.566).
+
+Carried into tuning (step 3.6): logistic regression and XGBoost (the best tree model), to test whether stronger regularisation closes the gap.

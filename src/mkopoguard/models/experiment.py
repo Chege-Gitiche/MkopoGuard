@@ -2,7 +2,7 @@
 
 run_experiment() does the same five things for every model, so results are comparable:
 1. 5-fold cross-validation on the TRAINING set only (the evaluation plan's deciding score)
-2. fit on the whole training set
+2. fit on the whole training set, and record its training score to spot overfitting
 3. score the VALIDATION set, overall and for Kenya, statement holders and thin-file applicants
 4. stop if the scores trip the leakage alarm
 5. log parameters, metrics, tables and the fitted pipeline to MLflow
@@ -92,6 +92,7 @@ def run_experiment(
         start = time.time()
         cv = cross_validate(pipeline, train, columns)
         pipeline.fit(train[columns], train[TARGET])
+        on_train = evaluate(train[TARGET], pipeline.predict_proba(train[columns])[:, 1])
         p_val = pipeline.predict_proba(validation[columns])[:, 1]
         by_group = evaluate_groups(validation, p_val)
         overall = by_group.loc["all"].to_dict()
@@ -111,7 +112,15 @@ def run_experiment(
         for group, row in by_group.iterrows():
             prefix = "val_" if group == "all" else f"val_{group}_"
             mlflow.log_metrics({f"{prefix}{k}": row[k] for k in HEADLINE if k in row})
-        mlflow.log_metric("fit_seconds", time.time() - start)
+        # A big gap between training and validation scores means the model memorised noise
+        mlflow.log_metrics(
+            {
+                "train_pr_auc": on_train["pr_auc"],
+                "train_roc_auc": on_train["roc_auc"],
+                "overfit_gap_pr_auc": on_train["pr_auc"] - overall["pr_auc"],
+                "fit_seconds": time.time() - start,
+            }
+        )
         mlflow.log_text(cv.to_csv(index=False), "cv_folds.csv")
         mlflow.log_text(by_group.to_csv(), "validation_by_group.csv")
         mlflow.log_text(
@@ -125,6 +134,8 @@ def run_experiment(
         "run_id": run.info.run_id,
         "cv_pr_auc": cv["pr_auc"].mean(),
         "cv_pr_auc_std": cv["pr_auc"].std(),
+        "train_pr_auc": on_train["pr_auc"],
+        "overfit_gap": on_train["pr_auc"] - overall["pr_auc"],
         **{f"val_{k}": overall[k] for k in HEADLINE},
         "val_kenya_pr_auc": by_group.loc["kenya"].get("pr_auc", np.nan),
         "val_thin_file_pr_auc": by_group.loc["thin_file"].get("pr_auc", np.nan),

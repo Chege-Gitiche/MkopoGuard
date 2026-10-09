@@ -151,4 +151,11 @@ SKOPS_TRUSTED_TYPES = [
     "mkopoguard.features.preprocess._to_float",
     "mkopoguard.features.preprocess._to_labels",
     "numpy.dtype",
+    # Model types from well-known libraries (step 3.4)
+    "sklearn.tree._tree.Tree",
+    "xgboost.core.Booster",
+    "xgboost.sklearn.XGBClassifier",
+    "lightgbm.basic.Booster",
+    "lightgbm.sklearn.LGBMClassifier",
+    "collections.OrderedDict",
 ]

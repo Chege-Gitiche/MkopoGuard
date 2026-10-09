@@ -94,8 +94,12 @@ def paired_bars(
     title: str,
     subtitle: str,
     xlabel: str = "",
+    percent: bool = True,
 ):
-    """Vertical bars for 1-2 series (table columns) across categories (table index)."""
+    """Vertical bars for 1-2 series (table columns) across categories (table index).
+
+    percent=False shows plain decimals (e.g. PR-AUC) instead of percentages.
+    """
     series = list(table.columns)
     colours = [BLUE, ORANGE][: len(series)]
     width = 0.8 / len(series)
@@ -106,14 +110,15 @@ def paired_bars(
         values = table[name].to_numpy()
         ax.bar(positions, values, width=width - 0.04, color=colour, label=name)
         for pos, value in zip(positions, values, strict=True):
-            ax.text(pos, value + 0.01, f"{value:.0%}", ha="center", fontsize=8.5, color=TEXT_MUTED)
+            text = f"{value:.0%}" if percent else f"{value:.3f}"
+            ax.text(pos, value + 0.01, text, ha="center", fontsize=8.5, color=TEXT_MUTED)
     ax.set_xticks(list(x), [textwrap.fill(str(i), 14) for i in table.index])
     ax.set_xlabel(xlabel)
     ax.grid(axis="x", visible=False)
     ax.set_ylim(0, min(1.0, table.to_numpy().max() + 0.12))
     if len(series) > 1:
         ax.legend(loc="upper left", ncols=len(series), bbox_to_anchor=(0, -0.16))
-    _finish(ax, title, subtitle, "y")
+    _finish(ax, title, subtitle, "y" if percent else "none")
     return fig
 
 
