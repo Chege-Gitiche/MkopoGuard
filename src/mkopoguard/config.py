@@ -78,3 +78,7 @@ DEFAULT_RATE_BAND = (0.15, 0.25)
 # --- Train / validation / test split (step 2.6) ---
 SPLIT_SEED = 2026
 SPLIT_FILE = PROJECT_ROOT / "data" / "splits" / "applicant_split.csv"
+
+# --- Experiment tracking (step 3.1) ---
+MLRUNS_DIR = PROJECT_ROOT / "mlruns"
+MLFLOW_EXPERIMENT = "mkopoguard"

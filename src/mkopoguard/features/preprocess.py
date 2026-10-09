@@ -141,3 +141,14 @@ def build_preprocessor(include_country: bool = False) -> ColumnTransformer:
 def make_pipeline(model, include_country: bool = False) -> Pipeline:
     """Preprocessing + model as one object: fit, cross-validate and save them together."""
     return Pipeline([("prep", build_preprocessor(include_country)), ("model", model)])
+
+
+# Types MLflow's safe model format (skops) may load from a saved pipeline. Skops refuses any
+# type not listed, so a tampered model file can't run arbitrary code when it is loaded.
+SKOPS_TRUSTED_TYPES = [
+    "mkopoguard.features.preprocess.Winsorizer",
+    "mkopoguard.features.preprocess._log_money",
+    "mkopoguard.features.preprocess._to_float",
+    "mkopoguard.features.preprocess._to_labels",
+    "numpy.dtype",
+]
