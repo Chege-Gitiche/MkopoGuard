@@ -60,3 +60,29 @@ Decisions:
 2. The simulated default rule is a weighted sum passed through a logistic curve, with no interactions for trees to find. Given the true hidden drivers directly, logistic regression still beats XGBoost (validation PR-AUC 0.580 vs 0.566).
 
 Carried into tuning (step 3.6): logistic regression and XGBoost (the best tree model), to test whether stronger regularisation closes the gap.
+
+## Imbalance (step 3.5)
+
+About 20% of applicants default (4.02 non-defaulters per defaulter in training). We compared
+three ways of handling this for the two models carried forward from step 3.4. SMOTE ran inside
+an imbalanced-learn pipeline, so only training folds were ever resampled (tested in
+`tests/unit/test_imbalance.py`). Full results: `docs/results/imbalance.csv`.
+
+| run | CV PR-AUC | gain vs none | val ECE | val approval rate @0.20 |
+|---|---|---|---|---|
+| logistic_none | 0.393 | – | 0.011 | 60% |
+| logistic_weights | 0.392 | −0.000 | 0.252 | 10% |
+| logistic_smote | 0.391 | −0.002 | 0.241 | 14% |
+| xgboost_none | 0.381 | – | 0.013 | 60% |
+| xgboost_weights | 0.378 | −0.002 | 0.227 | 15% |
+| xgboost_smote | 0.375 | −0.006 | 0.034 | 55% |
+
+**Finding:** no strategy beats "none" by more than one fold standard deviation (rule 6), so none
+is worth it. Weighting shifts every score up by roughly the same amount, so the ranking (PR-AUC)
+barely changes, but the probabilities stop meaning what they say: ECE rises about 20-fold and
+almost every applicant lands above the 0.20 threshold. SMOTE's invented defaulters add noise,
+not new patterns, which hurts XGBoost most.
+
+**Decision:** train on the data as it is. The imbalance is handled where it belongs: calibration
+(step 3.10) and a threshold chosen from the cost of each kind of mistake (step 3.11). Moving
+the threshold buys recall without corrupting the probabilities a loan officer sees.

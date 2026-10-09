@@ -7,3 +7,4 @@ scikit-learn==1.9.1
 mlflow==3.17.0
 lightgbm==4.7.0
 xgboost-cpu==3.4.1
+imbalanced-learn==0.14.2

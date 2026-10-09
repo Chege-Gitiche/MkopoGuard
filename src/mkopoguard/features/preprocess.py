@@ -11,6 +11,7 @@ median, and the model tells them apart through `has_statement` (1 = has a statem
 
 import numpy as np
 import pandas as pd
+from imblearn.pipeline import Pipeline as ImbPipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -138,9 +139,19 @@ def build_preprocessor(include_country: bool = False) -> ColumnTransformer:
     return transformer.set_output(transform="pandas")
 
 
-def make_pipeline(model, include_country: bool = False) -> Pipeline:
-    """Preprocessing + model as one object: fit, cross-validate and save them together."""
-    return Pipeline([("prep", build_preprocessor(include_country)), ("model", model)])
+def make_pipeline(model, include_country: bool = False, sampler=None):
+    """Preprocessing + model as one object: fit, cross-validate and save them together.
+
+    sampler (e.g. SMOTE) adds a resampling step between preprocessing and the model. It uses
+    imbalanced-learn's Pipeline, which resamples ONLY while fitting: predictions are always
+    made on real, unaltered applicants, and inside cross-validation only training folds are
+    resampled.
+    """
+    if sampler is None:
+        return Pipeline([("prep", build_preprocessor(include_country)), ("model", model)])
+    return ImbPipeline(
+        [("prep", build_preprocessor(include_country)), ("sampler", sampler), ("model", model)]
+    )
 
 
 # Types MLflow's safe model format (skops) may load from a saved pipeline. Skops refuses any
@@ -158,4 +169,7 @@ SKOPS_TRUSTED_TYPES = [
     "lightgbm.basic.Booster",
     "lightgbm.sklearn.LGBMClassifier",
     "collections.OrderedDict",
+    # Resampling (step 3.5)
+    "imblearn.pipeline.Pipeline",
+    "imblearn.over_sampling._smote.base.SMOTE",
 ]
