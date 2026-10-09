@@ -74,3 +74,7 @@ TERM_PROBS_BY_AMOUNT = (
 # --- Defaults (data card section 2.5) ---
 DEFAULT_TARGET_RATE = 0.20
 DEFAULT_RATE_BAND = (0.15, 0.25)
+
+# --- Train / validation / test split (step 2.6) ---
+SPLIT_SEED = 2026
+SPLIT_FILE = PROJECT_ROOT / "data" / "splits" / "applicant_split.csv"
