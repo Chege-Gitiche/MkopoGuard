@@ -28,3 +28,20 @@ Written in step 3.2, **before any model was trained**. Every model in Phase 3 is
 ## Why not accuracy?
 
 80% of applicants repay, so approving everyone is 80% accurate while catching zero defaulters. On the validation set, the do-nothing model's accuracy (0.801) beats even perfect knowledge (0.772). Accuracy rewards ignoring the minority class, which is exactly the class a lender cares about.
+
+## Rule added in step 3.3: ties
+
+6. **A difference in CV PR-AUC smaller than one fold standard deviation is a tie, and ties go to the simpler model.** Added after the baselines showed three logistic variants within 0.002 of each other, against a fold spread of about 0.029. The rule doesn't favour any model in particular; it stops noise from picking winners.
+
+## Baselines (step 3.3)
+
+| Model | CV PR-AUC | Val PR-AUC | Val ROC-AUC | Val ECE |
+| --- | --- | --- | --- | --- |
+| **logistic (baseline to beat)** | **0.393 ± 0.029** | 0.412 | 0.717 | 0.011 |
+| logistic + country | 0.394 ± 0.027 | 0.410 | 0.717 | 0.010 |
+| logistic, class-weighted | 0.392 ± 0.029 | 0.411 | 0.717 | 0.252 |
+| dummy | 0.199 | 0.199 | 0.500 | 0.000 |
+
+Decisions:
+- **country_code is dropped** for good: no gain overall (a tie), and worse for Kenyans (val PR-AUC 0.362 vs 0.390).
+- **Class weights don't improve ranking but ruin calibration** (ECE 0.011 → 0.252; approval at the 0.20 threshold falls from 60% to 10%). Any imbalance method in step 3.5 must be followed by calibration (step 3.10) before its probabilities are used.

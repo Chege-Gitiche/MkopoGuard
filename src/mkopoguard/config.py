@@ -87,3 +87,7 @@ MLFLOW_EXPERIMENT = "mkopoguard"
 PROVISIONAL_THRESHOLD = 0.20  # decline if p >= this, until step 3.11 picks the real threshold
 LEAKAGE_ALARM = {"roc_auc": 0.86, "pr_auc": 0.65}  # above the true-probability ceiling
 BOOTSTRAP_RESAMPLES = 1_000
+
+# --- Modelling (step 3.3) ---
+CV_FOLDS = 5
+RESULTS_DIR = PROJECT_ROOT / "docs" / "results"
