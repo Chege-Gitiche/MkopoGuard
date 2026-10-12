@@ -1,0 +1,22 @@
+{
+  "logistic": {
+    "params": {
+      "C": 1.0,
+      "l1_ratio": 0.0
+    },
+    "tuned": false
+  },
+  "xgboost": {
+    "params": {
+      "colsample_bytree": 0.8,
+      "gamma": 0.0,
+      "learning_rate": 0.05,
+      "max_depth": 4,
+      "min_child_weight": 5,
+      "n_estimators": 300,
+      "reg_lambda": 1.0,
+      "subsample": 0.8
+    },
+    "tuned": false
+  }
+}

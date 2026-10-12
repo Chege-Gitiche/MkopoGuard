@@ -86,3 +86,28 @@ not new patterns, which hurts XGBoost most.
 **Decision:** train on the data as it is. The imbalance is handled where it belongs: calibration
 (step 3.10) and a threshold chosen from the cost of each kind of mistake (step 3.11). Moving
 the threshold buys recall without corrupting the probabilities a loan officer sees.
+
+## Tuning (step 3.6)
+
+Optuna (TPE sampler, seed 2026) searched 40 logistic and 60 XGBoost settings. Every trial was
+scored by 5-fold CV on the training set only; trial 0 was always the untuned model. Results:
+`docs/results/tuning.csv`, every trial: `docs/results/tuning_trials.csv`, chart:
+`docs/img/models_02_tuning.png`.
+
+| model | untuned CV PR-AUC | best tuned | gain | 1 fold std | val PR-AUC untuned → tuned | overfit gap untuned → tuned |
+|---|---|---|---|---|---|---|
+| logistic | 0.393 | 0.398 | +0.005 | 0.029 | 0.412 → 0.412 | −0.007 → −0.009 |
+| xgboost | 0.381 | 0.397 | +0.017 | 0.023 | 0.400 → 0.408 | 0.168 → 0.002 |
+
+**Findings**
+- XGBoost's best settings use `max_depth = 1`: one feature per tree, i.e. an additive model.
+  Given the choice, boosting turned itself into a version of logistic regression and its
+  overfitting vanished. This confirms step 3.4: the default rule has no interactions to find.
+- Logistic's best settings are almost pure lasso (l1_ratio ≈ 0.99, C ≈ 0.05), which zeroes 38
+  of the 68 columns with no loss of score. Followed up in the ablation (step 3.7).
+- Neither gain beats one fold std (rule 6), and the best of many trials is slightly
+  optimistic anyway.
+
+**Decision:** keep the untuned settings (`docs/results/tuned_params.json`). The champion is
+plain logistic regression (L2, C = 1): as good as anything tuned, the simplest to explain to a
+loan officer, and well calibrated. Later steps build models with `tuning.chosen_model()`.

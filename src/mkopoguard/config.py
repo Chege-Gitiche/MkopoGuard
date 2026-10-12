@@ -91,3 +91,8 @@ BOOTSTRAP_RESAMPLES = 1_000
 # --- Modelling (step 3.3) ---
 CV_FOLDS = 5
 RESULTS_DIR = PROJECT_ROOT / "docs" / "results"
+
+# --- Tuning (step 3.6) ---------------------------------------------------------------
+TUNING_SEED = 2026
+TUNING_TRIALS = {"logistic": 40, "xgboost": 60}
+TUNED_PARAMS_FILE = PROJECT_ROOT / "docs" / "results" / "tuned_params.json"
