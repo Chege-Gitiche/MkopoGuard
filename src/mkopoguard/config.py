@@ -109,3 +109,16 @@ LEARNING_CURVE_FRACTIONS = (0.0625, 0.125, 0.25, 0.5, 1.0)
 LEARNING_CURVE_REPEATS = 3  # random subsamples per fraction (the full set needs only one)
 # Another doubling of the data is only "worth it" if it is projected to gain more than this
 LEARNING_CURVE_MIN_GAIN = 0.002
+
+# --- Leave-one-country-out (step 3.9) --------------------------------------------------
+# A country "loses clearly" only if its PR-AUC drops by more than this when the model has
+# never seen it (and the drop is beyond chance). Two PR-AUC points: smaller country-level
+# differences are within the noise of ~650 applicants and wouldn't change a lending decision.
+COUNTRY_MIN_LOSS = 0.02
+
+# --- Calibration (step 3.10) -----------------------------------------------------------
+CALIBRATION_METHODS = ("none", "sigmoid", "isotonic")  # sigmoid = Platt scaling
+# A calibration method is only adopted if it cuts the calibration error (ECE) by more than
+# this: half a percentage point between predicted and actual default rates
+CALIBRATION_MIN_ECE_GAIN = 0.005
+CALIBRATION_FILE = PROJECT_ROOT / "docs" / "results" / "calibration.json"

@@ -88,12 +88,18 @@ def drop_one_table(train: pd.DataFrame, model_factory, full: pd.DataFrame) -> pd
 
 
 def paired_bootstrap(
-    y, p_base, p_other, resamples: int = config.BOOTSTRAP_RESAMPLES, seed: int = 0
+    y,
+    p_base,
+    p_other,
+    resamples: int = config.BOOTSTRAP_RESAMPLES,
+    seed: int = 0,
+    level: float = 0.95,
 ) -> dict[str, float]:
-    """PR-AUC loss (base - other) on the same applicants, with a 95% interval.
+    """PR-AUC loss (base - other) on the same applicants, with an interval (95% by default).
 
     Both models are scored on the SAME resampled applicants each time, so the interval
-    describes the difference itself, not two separate scores.
+    describes the difference itself, not two separate scores. Step 3.9 widens the interval
+    (a higher level) when many countries are checked at once.
     """
     y, p_base, p_other = np.asarray(y), np.asarray(p_base), np.asarray(p_other)
     rng = np.random.default_rng(seed)
@@ -102,7 +108,8 @@ def paired_bootstrap(
         i = rng.integers(0, len(y), len(y))
         if 0 < y[i].sum() < len(i):
             diffs.append(pr_auc(y[i], p_base[i]) - pr_auc(y[i], p_other[i]))
-    low, high = np.percentile(diffs, [2.5, 97.5])
+    tail = 100 * (1 - level) / 2
+    low, high = np.percentile(diffs, [tail, 100 - tail])
     return {"loss": pr_auc(y, p_base) - pr_auc(y, p_other), "low": low, "high": high}
 
 

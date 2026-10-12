@@ -185,4 +185,9 @@ SKOPS_TRUSTED_TYPES = [
     # Resampling (step 3.5)
     "imblearn.pipeline.Pipeline",
     "imblearn.over_sampling._smote.base.SMOTE",
+    # Calibration (step 3.10)
+    "sklearn.calibration.CalibratedClassifierCV",
+    "sklearn.calibration._CalibratedClassifier",
+    "sklearn.calibration._SigmoidCalibration",
+    "sklearn.isotonic.IsotonicRegression",
 ]

@@ -144,3 +144,83 @@ through load_split, so the test set stays locked.
 
 **Decision:** the 18,718-applicant pool is large enough. Keep logistic regression; don't grow
 the simulated pool.
+
+## Leave-one-country-out (step 3.9)
+
+**Rule 9.** The model transfers to new countries if (a) no country loses clearly when the model
+has never seen it: a PR-AUC loss above 0.02 whose paired bootstrap interval (widened to
+1 - 0.05/20 for checking 20 countries) lies entirely above zero; and (b) no never-seen
+country's average prediction is off by more than chance (Bonferroni, |z| > 3.02).
+
+**Design.** A first attempt (train on 19 countries, compare with ordinary CV) made every
+country look better when unseen, because the 19-country model had ~12,400 training rows vs
+~10,500 in a CV fold: it measured more data, not transfer. The final design is paired: in
+each CV fold, each country's held-out applicants are scored by the fold's model and by the
+same model retrained without that country (~5% fewer rows). Results:
+`docs/results/country_transfer.csv`, `docs/results/country_transfer_calibration.csv`,
+chart `docs/img/models_06_country_transfer.png`.
+
+| | champion (logistic) | XGBoost |
+|---|---|---|
+| pooled PR-AUC, seen → never seen | 0.392 → 0.391 | 0.377 → 0.375 |
+| median loss per country | −0.0005 | +0.0006 |
+| worst country | ZWE +0.004 | KEN +0.025 |
+| Kenya PR-AUC, seen → never seen | 0.433 → 0.435 | 0.403 → 0.378 |
+| countries losing clearly | 0 | 0 |
+| never-seen countries miscalibrated | 0 (largest ZWE, z = 2.96) | 1 (ZWE, z = 3.05) |
+| rule 9 | transfers | does not transfer (narrowly) |
+
+**Findings**
+- The champion barely depends on which countries it was trained on; its per-country swings are
+  about a third of XGBoost's. With no country input and an additive form, it has no room for
+  country-specific shortcuts. This supports dropping `country_code` in step 3.3.
+- XGBoost leans more on local patterns (Kenya −0.025, not significant) and narrowly fails the
+  calibration check for Zimbabwe.
+- Zimbabwe is a watch item: its default rate (27.4%) is above what its applicants' answers
+  predict (22.8%) in 3.9 and 3.10. The simulator has no country effect, so this is most likely
+  chance in 635 applicants; to be checked again in monitoring.
+
+**Limitation.** In the real Findex, `income_quintile` is relative within each country, so the
+same quintile means different incomes in different countries. The simulator gives each
+quintile the same Kenya-equivalent income everywhere, so it cannot show that transfer risk.
+A real deployment must re-check transfer on real repayment data.
+
+**Decision:** the champion may be used in countries outside the training pool without
+retraining, subject to calibration monitoring. Country stays out of the model.
+
+## Calibration (step 3.10)
+
+**Rule 8.** A calibration method is adopted only if, compared with none, it cuts ECE by more
+than its paired fold standard error and by more than 0.005, without making the Brier score
+worse or costing more than 0.002 PR-AUC.
+
+Measured on out-of-fold CV predictions for all 13,102 training applicants. Methods: none,
+sigmoid (Platt) and isotonic, each fitted with an inner 5-fold CV. A **positive control** (the
+class-weighted logistic from 3.5, miscalibrated on purpose) shows the method finds and fixes
+bad calibration when it exists. Results: `docs/results/calibration.csv`,
+`docs/results/calibration_by_group.csv`, chart `docs/img/models_05_calibration.png`.
+
+| model | method | PR-AUC | ECE | slope | intercept | mean predicted (actual 0.199) |
+|---|---|---|---|---|---|---|
+| champion | none | 0.392 | 0.006 | 0.96 | −0.05 | 0.199 |
+| champion | sigmoid | 0.392 | 0.006 | 1.01 | 0.02 | 0.199 |
+| champion | isotonic | 0.389 | 0.006 | 0.94 | −0.07 | 0.199 |
+| class-weighted (control) | none | 0.391 | 0.253 | 0.94 | −1.38 | 0.452 |
+| class-weighted (control) | sigmoid | 0.391 | 0.006 | 1.02 | 0.02 | 0.199 |
+| XGBoost | none | 0.377 | 0.011 | 0.85 | −0.17 | 0.197 |
+| XGBoost | isotonic | 0.379 | 0.008 | 0.99 | −0.02 | 0.199 |
+
+**Findings**
+- The champion is already calibrated; neither method passes rule 8 (isotonic slightly hurts
+  ranking). Logistic regression fitted by maximum likelihood is calibrated by construction.
+- The positive control works: Platt scaling takes the class-weighted model from 45% predicted
+  vs 20% actual (ECE 0.253) to 19.9% (ECE 0.006), confirming the 3.5 decision.
+- XGBoost is mildly over-confident (slope 0.85), typical of boosted trees.
+- By country (calibration-in-the-large): Kenya predicted 17.4% vs actual 16.2% (z = −0.9).
+  With the flag bar raised for 20 countries (Bonferroni, |z| > 3.02), no country is flagged;
+  the largest is Zimbabwe (z = 2.5), within chance. Thin-file and statement applicants:
+  observed/expected 1.001 each. The simulator has no country effect, so this is the known answer.
+- Validation (once): ECE 0.012, slope 0.99, intercept −0.005, mean predicted 19.8% vs 19.9%.
+
+**Decision:** no calibration (`docs/results/calibration.json`). Probabilities are used as the
+model gives them; step 3.11 can set the threshold directly from costs.
