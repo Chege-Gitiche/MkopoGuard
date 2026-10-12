@@ -96,3 +96,9 @@ RESULTS_DIR = PROJECT_ROOT / "docs" / "results"
 TUNING_SEED = 2026
 TUNING_TRIALS = {"logistic": 40, "xgboost": 60}
 TUNED_PARAMS_FILE = PROJECT_ROOT / "docs" / "results" / "tuned_params.json"
+
+# --- Feature ablation (step 3.7) -------------------------------------------------------
+# Removing a feature group only counts as a loss if it costs more than this much PR-AUC
+# (as well as being consistent across folds). Smaller changes are below what we can measure.
+ABLATION_MIN_LOSS = 0.002
+FEATURE_SELECTION_FILE = PROJECT_ROOT / "docs" / "results" / "feature_selection.json"

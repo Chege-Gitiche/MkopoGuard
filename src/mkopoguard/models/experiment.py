@@ -83,14 +83,15 @@ def run_experiment(
     params: dict | None = None,
     include_country: bool = False,
     sampler=None,
+    drop=(),
 ) -> dict:
     """Cross-validate, fit, validate and log one model. Returns the headline results.
 
     sampler (e.g. SMOTE) is applied only while fitting, so only training folds are resampled.
     """
-    columns = input_columns(include_country)
+    columns = input_columns(include_country, drop)
     assert_no_leakage(columns)
-    pipeline = make_pipeline(model, include_country, sampler)
+    pipeline = make_pipeline(model, include_country, sampler, drop)
 
     with start_run(name, evaluated_on="validation", step=step) as run:
         start = time.time()

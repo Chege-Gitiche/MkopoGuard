@@ -57,9 +57,16 @@ COUNTRY = "country_code"
 MISSING = "missing"
 
 
-def input_columns(include_country: bool = False) -> list[str]:
-    """Every column the pipeline reads, in a fixed order."""
-    return NUMERIC + BINARY + CATEGORICAL + ([COUNTRY] if include_country else [])
+def input_columns(include_country: bool = False, drop=()) -> list[str]:
+    """Every column the pipeline reads, in a fixed order, minus any listed in `drop`."""
+    columns = NUMERIC + BINARY + CATEGORICAL + ([COUNTRY] if include_country else [])
+    return _keep(columns, drop)
+
+
+def _keep(columns: list[str], drop) -> list[str]:
+    """columns without the ones in drop (step 3.7: feature groups the model leaves out)."""
+    dropped = set(drop)
+    return [c for c in columns if c not in dropped]
 
 
 class Winsorizer(BaseEstimator, TransformerMixin):
@@ -108,7 +115,7 @@ def _to_labels(X):
     return frame.where(frame.notna(), MISSING).astype(str)
 
 
-def build_preprocessor(include_country: bool = False) -> ColumnTransformer:
+def build_preprocessor(include_country: bool = False, drop=()) -> ColumnTransformer:
     """The unfitted ColumnTransformer. Fit it (inside a Pipeline) on training data only."""
     numeric = Pipeline(
         [
@@ -132,26 +139,32 @@ def build_preprocessor(include_country: bool = False) -> ColumnTransformer:
     )
     groups = CATEGORICAL + ([COUNTRY] if include_country else [])
     transformer = ColumnTransformer(
-        [("num", numeric, NUMERIC), ("bin", binary, BINARY), ("cat", categorical, groups)],
+        [
+            ("num", numeric, _keep(NUMERIC, drop)),
+            ("bin", binary, _keep(BINARY, drop)),
+            ("cat", categorical, _keep(groups, drop)),
+        ],
         remainder="drop",
         verbose_feature_names_out=False,
     )
     return transformer.set_output(transform="pandas")
 
 
-def make_pipeline(model, include_country: bool = False, sampler=None):
+def make_pipeline(model, include_country: bool = False, sampler=None, drop=()):
     """Preprocessing + model as one object: fit, cross-validate and save them together.
 
     sampler (e.g. SMOTE) adds a resampling step between preprocessing and the model. It uses
     imbalanced-learn's Pipeline, which resamples ONLY while fitting: predictions are always
     made on real, unaltered applicants, and inside cross-validation only training folds are
     resampled.
+
+    drop lists input columns the pipeline ignores (step 3.7). Dropped columns don't need to
+    be present at prediction time, so the API never has to ask for them.
     """
+    prep = build_preprocessor(include_country, drop)
     if sampler is None:
-        return Pipeline([("prep", build_preprocessor(include_country)), ("model", model)])
-    return ImbPipeline(
-        [("prep", build_preprocessor(include_country)), ("sampler", sampler), ("model", model)]
-    )
+        return Pipeline([("prep", prep), ("model", model)])
+    return ImbPipeline([("prep", prep), ("sampler", sampler), ("model", model)])
 
 
 # Types MLflow's safe model format (skops) may load from a saved pipeline. Skops refuses any

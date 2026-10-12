@@ -1,0 +1,14 @@
+{
+  "dropped_groups": [
+    "financial_access",
+    "income_channels",
+    "transfers"
+  ],
+  "kept_groups": [
+    "loan",
+    "profile",
+    "savings_resilience",
+    "borrowing_history",
+    "statement"
+  ]
+}
