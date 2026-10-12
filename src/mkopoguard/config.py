@@ -102,3 +102,10 @@ TUNED_PARAMS_FILE = PROJECT_ROOT / "docs" / "results" / "tuned_params.json"
 # (as well as being consistent across folds). Smaller changes are below what we can measure.
 ABLATION_MIN_LOSS = 0.002
 FEATURE_SELECTION_FILE = PROJECT_ROOT / "docs" / "results" / "feature_selection.json"
+
+# --- Learning curve (step 3.8) ---------------------------------------------------------
+# Each fraction is half the next, so every step on the curve is one doubling of the data
+LEARNING_CURVE_FRACTIONS = (0.0625, 0.125, 0.25, 0.5, 1.0)
+LEARNING_CURVE_REPEATS = 3  # random subsamples per fraction (the full set needs only one)
+# Another doubling of the data is only "worth it" if it is projected to gain more than this
+LEARNING_CURVE_MIN_GAIN = 0.002

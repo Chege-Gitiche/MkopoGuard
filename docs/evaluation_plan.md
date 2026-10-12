@@ -111,3 +111,36 @@ scored by 5-fold CV on the training set only; trial 0 was always the untuned mod
 **Decision:** keep the untuned settings (`docs/results/tuned_params.json`). The champion is
 plain logistic regression (L2, C = 1): as good as anything tuned, the simplest to explain to a
 loan officer, and well calibrated. Later steps build models with `tuning.chosen_model()`.
+
+## Learning curve (step 3.8)
+
+Each CV fold's training rows were subsampled to 1/16, 1/8, 1/4, 1/2 and all (3 random draws
+for each smaller share), and every model was scored on the same full held-out fold. Both
+models use the 3.6 settings and the 3.7 feature groups. Results:
+`docs/results/learning_curve.csv`, chart: `docs/img/models_04_learning_curve.png`.
+
+| applicants trained on | logistic: unseen | logistic: training | XGBoost: unseen | XGBoost: training |
+|---|---|---|---|---|
+| 655 | 0.346 | 0.494 | 0.314 | 0.886 |
+| 1,310 | 0.369 | 0.435 | 0.332 | 0.839 |
+| 2,620 | 0.382 | 0.417 | 0.353 | 0.767 |
+| 5,241 | 0.392 | 0.410 | 0.369 | 0.675 |
+| 10,482 | 0.395 | 0.404 | 0.381 | 0.591 |
+
+**Ceiling:** the simulator's true default probabilities score PR-AUC 0.617 on the same folds.
+No model can beat this with any amount of data, because defaults are partly random. (The
+leakage alarm at 0.65 sits just above it.) The true probabilities are read for evaluation only,
+through load_split, so the test set stays locked.
+
+**Findings**
+- Logistic regression has plateaued: the last two doublings gained 0.010 and 0.003, and the next
+  is projected to gain 0.001, below the 0.002 that counts. Its overfitting gap is 0.009.
+- The 0.22 gap to the ceiling is information the inputs don't carry (true discipline, income,
+  noise in behaviour), not a shortage of applicants. Closing it needs new kinds of data
+  (e.g. longer statement history, repayment records), not more of the same.
+- XGBoost is still learning (+0.011 per doubling, overfitting gap 0.21), but on the current
+  trend it would need about 4x the applicants just to reach logistic's score. Step 3.6
+  showed it only gets there by becoming additive, so more data would not reveal interactions.
+
+**Decision:** the 18,718-applicant pool is large enough. Keep logistic regression; don't grow
+the simulated pool.
