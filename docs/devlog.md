@@ -339,3 +339,144 @@ Used ISO country codes instead of names because "Côte d'Ivoire" gets mangled
 - Three tests protect the future API: one applicant alone matches the same applicant in a batch, a saved/reloaded pipeline gives identical output, and unknown categories don't crash
 
 **Next:** Step 2.6: train/validation/test split (70/15/15, stratified by country and default).
+
+## 2026-10-9 — Step 2.6: The one-and-only split
+
+**Goal:** Split the applicants into train, validation and test sets once and lock them, so every model in Phase 3 is judged on the same applicants and the test set stays unseen until the end.
+
+**Did:**
+- Wrote `data/split.py`: a 70/15/15 split stratified by country × defaulted × has_statement (80 groups). Every part has the same country mix, default rate and thin-file share as the whole pool.
+- Result: 13,102 train / 2,808 validation / 2,808 test.
+- Only applicant IDs are saved, in `data/splits/applicant_split.csv` (committed to Git), so rebuilding the features never changes who is in which set.
+- `write_once()` refuses to overwrite a split that differs from the saved one. `--force` exists only for when the applicants themselves change.
+- `load_split()` locks the test set: it raises an error unless you pass `allow_test=True`, which happens exactly once, at step 3.12.
+- Tests: the split is reproducible and doesn't depend on row order, the parts don't overlap and cover everyone, proportions hold within each group, and the test set can't be loaded by accident.
+
+**Broke / learned:**
+- The split has to depend only on the applicants and the seed, never on row order. That's why the table is sorted by `applicant_id` before splitting.
+- A test set protected by good intentions isn't protected. Making the code refuse is the QA way to do it.
+
+**Decisions:**
+- Stratify on three things, not just the default flag. Kenya and thin-file applicants are the groups we report on, so every part must have enough of them.
+- Commit the split file to Git so it's part of the project's history, not something that gets regenerated.
+
+## 2026-10-9 — Step 3.1: Experiment tracking with MLflow
+
+**Goal:** Record every model run automatically, including the things that are easy to forget, so any result can be traced back to the exact code and data that produced it.
+
+**Did:**
+- Wrote `tracking.py`. `start_run()` tags every run with the Git commit (with `-dirty` if there were uncommitted changes), fingerprints of the split file and the model table, the step number, and which split the metrics were measured on (cv / train / validation / test).
+- Local store: SQLite at `mlruns/mlflow.db`, git-ignored. View with `python -m mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db`.
+- Turned MLflow's usage telemetry off before importing it. A credit-risk project shouldn't send anything out unasked.
+- Models are saved in skops, a safe format. Loading only accepts types on an explicit allow-list (`SKOPS_TRUSTED_TYPES`), so a tampered model file can't run code.
+- Added `scripts/tracking_smoke.py`: it trains a dummy model, logs it, reloads it, and checks the predictions are identical.
+
+**Broke / learned:**
+- The first reload failed with "untrusted types". Skops rejected our own `Winsorizer` and some numpy and sklearn types. Fixed by listing them in `SKOPS_TRUSTED_TYPES`. Every new model type has to be added there (tree models in 3.4, imblearn in 3.5).
+- On Windows, the tracking URI has to be built with `as_posix()`. Backslashes break the `sqlite:///` path.
+
+**Decisions:**
+- Local SQLite, not a hosted server: free, works offline, and enough for one person.
+- `evaluated_on` is a required tag, so a test-set score can never be mistaken for a validation score
+
+## 2026-10-9 — Step 3.2: The evaluation plan, decided before any model
+
+**Goal:** Fix the metrics and rules first, so model choice can't be bent to fit whatever result looks good.
+
+**Did:**
+- Wrote `models/metrics.py`. `evaluate()` returns the same numbers for every model:
+  - ranking: **PR-AUC (primary)**, ROC-AUC, KS
+  - probabilities: Brier, Brier skill, ECE
+  - decisions at a provisional threshold of 0.20: recall, precision, false-positive rate, accuracy, approval rate
+- Added bootstrap confidence intervals (1,000 resamples), reporting by subgroup (all / Kenya / statement holders / thin-file), and a calibration table.
+- Added a **leakage alarm**: stop if ROC-AUC > 0.86 or PR-AUC > 0.65. Those ceilings sit above what the simulator's own hidden rule could plausibly achieve, so a score above them means information is leaking.
+- Wrote `docs/evaluation_plan.md` with the metrics and rules 1–5.
+
+**Broke / learned:**
+- With 20% defaulters, accuracy is misleading: approving everyone scores 80%. PR-AUC focuses on how well the model finds defaulters, which is the job.
+- A good probability and a good ranking are different properties. ECE checks the first, PR-AUC the second.
+
+**Decisions:**
+- PR-AUC is the deciding score. Calibration (ECE) and approval rate are guardrails.
+- The 0.20 threshold is provisional. The real one comes from the cost of each kind of mistake in step 3.11.
+
+## 2026-10-9 — Step 3.3: Experiment harness and baselines
+
+**Goal:** Put every model through one identical procedure, and set the bar every later model has to beat.
+
+**Did:**
+- Wrote `models/experiment.py`. `run_experiment()` runs 5-fold CV on train (folds stratified like the split), fits on all of train, records the training score to measure overfitting, scores validation overall and per subgroup, checks the leakage alarm, and logs everything to MLflow (CSV tables plus the pipeline).
+- `scripts/train_baselines.py` results (CV PR-AUC):
+
+  | model | CV PR-AUC | val ECE | val approval |
+  |---|---|---|---|
+  | dummy (no skill) | 0.199 | 0.000 | 100% |
+  | logistic | **0.393** | 0.011 | 60% |
+  | logistic + class weights | 0.392 | 0.252 | 10% |
+  | logistic + country | 0.394 | 0.010 | 60% |
+
+**Broke / learned:**
+- Class weights didn't improve ranking, but they broke the probabilities: ECE went up about 20 times and the approval rate fell to 10%.
+- Adding country gained 0.001, far smaller than the fold-to-fold noise (std 0.029). That led to a new rule.
+
+**Decisions:**
+- **Rule 6 (tie rule):** a gain smaller than one fold standard deviation is a tie, and a tie goes to the simpler model.
+- `country_code` stays out of the model. It adds nothing and invites unfairness across countries.
+- Baseline to beat: plain logistic regression, CV PR-AUC 0.393.
+
+## 2026-10-9 — Step 3.4: Tree-based candidates
+
+**Goal:** See whether more flexible models (random forest, XGBoost, LightGBM) beat logistic regression.
+
+**Did:**
+- Wrote `models/candidates.py` with conservative starting settings (shallow trees, a minimum number of applicants per leaf) and `scripts/train_candidates.py`.
+- Results (CV PR-AUC, with training vs validation PR-AUC):
+
+  | model | CV PR-AUC | train | validation |
+  |---|---|---|---|
+  | logistic (baseline) | **0.393** | 0.41 | 0.41 |
+  | XGBoost | 0.381 | 0.57 | 0.40 |
+  | random forest | 0.378 | 0.54 | 0.38 |
+  | LightGBM | 0.378 | 0.63 | 0.40 |
+
+- Chart: `docs/img/models_01_overfitting.png`.
+- Tests: every candidate trains, is reproducible, and saves and reloads with identical predictions.
+
+**Broke / learned:**
+- All three tree models overfit and lose to logistic regression. Diagnosis: the simulator's default rule is **additive** (no interactions), which is exactly the shape logistic regression fits. Even on the hidden drivers, logistic beats XGBoost (0.580 vs 0.566). This is now listed as a limitation in the data card.
+- Random forest predictions changed in the 16th decimal place from one call to the next when `n_jobs=-1`, because parallel trees add up their votes in a different order each time. `n_jobs=1` fixed it.
+- Swapped `xgboost` for `xgboost-cpu`, which avoids about 300 MB of GPU libraries we don't need.
+- The `viz.py` patch failed on my machine because `histogram` is at the end of my file. Lesson: write patches against the real file layout and make them order-independent.
+
+**Decisions:**
+- Carry logistic and XGBoost forward (the best of the trees) into tuning. Drop random forest and LightGBM.
+
+## 2026-10-9 — Step 3.5: Imbalance strategies
+
+**Goal:** Test the usual advice for imbalanced data (class weights, SMOTE) before adopting it.
+
+**Did:**
+- Added an optional `sampler` step to `make_pipeline()` using imbalanced-learn's Pipeline, which resamples **only while fitting**. Predictions and held-out folds always use real applicants.
+- Added the imblearn types to `SKOPS_TRUSTED_TYPES`. `run_experiment()` now logs a `sampler` param.
+- `scripts/compare_imbalance.py`: none / weights / SMOTE for logistic and XGBoost.
+
+  | run | CV PR-AUC | gain vs none | val ECE | val approval |
+  |---|---|---|---|---|
+  | logistic_none | 0.393 | – | 0.011 | 60% |
+  | logistic_weights | 0.392 | −0.000 | 0.252 | 10% |
+  | logistic_smote | 0.391 | −0.002 | 0.241 | 14% |
+  | xgboost_none | 0.381 | – | 0.013 | 60% |
+  | xgboost_weights | 0.378 | −0.002 | 0.227 | 15% |
+  | xgboost_smote | 0.375 | −0.006 | 0.034 | 55% |
+
+- Tests (`test_imbalance.py`, 8 tests): a `RecordingSMOTE` records how many rows it receives. This proves SMOTE only ever sees training rows, never a held-out fold or the applicants being scored. The tests also check that runs are reproducible and that the SMOTE pipeline saves and reloads identically. Total: 279 passed.
+
+**Broke / learned:**
+- Neither strategy improves ranking. Weighting raises every score by about the same amount, so the order barely changes but the probabilities stop being honest. SMOTE blends defaulters together, and on additive data that only adds noise.
+- If SMOTE runs before cross-validation, invented defaulters built from held-out applicants leak into training and inflate the scores. Running it inside the pipeline prevents that.
+- Ruff B007: a loop variable that's never used must start with `_` (`_family`).
+
+**Decisions:**
+- Train on the data as it is. The imbalance is handled where it belongs: calibration (3.10) and a threshold based on what each mistake costs (3.11).
+
+**Next:** 3.6, tune logistic and XGBoost with Optuna.
