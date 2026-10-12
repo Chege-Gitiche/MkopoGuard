@@ -224,3 +224,51 @@ bad calibration when it exists. Results: `docs/results/calibration.csv`,
 
 **Decision:** no calibration (`docs/results/calibration.json`). Probabilities are used as the
 model gives them; step 3.11 can set the threshold directly from costs.
+
+## Decision threshold (step 3.11)
+
+**Rule.** Approve when the probability of default p < m·T / (m·T + LGD), where m is the net
+margin per month, T the loan term in months and LGD the share of principal lost on default.
+This is where approving has zero expected profit; the loan amount cancels out.
+
+**Assumptions** (all settings in `config.py`):
+
+| assumption | value | basis |
+|---|---|---|
+| fee | 7.5% of principal per month | M-Shwari's 30-day price ([CGAP](https://www.cgap.org/blog/digital-credit-in-kenya-time-for-celebration-or-concern); [Business Daily, 2023](https://www.businessdailyafrica.com/bd/markets/market-news/m-shwari-retains-7-5pc-rate-as-competitors-increase-fee--4183742)); the cheap end of Kenyan digital credit (Tala 5-20% per loan, Branch 1-14%/month, Okolea 11.15%/30 days; [Kenya Times, 2024](https://thekenyatimes.com/business/interest-rates-for-top-licensed-mobile-loan-apps-in-kenya/)) |
+| funding cost | 1% per month (~12% a year) | assumption; CBK rate 8.75% ([Aug 2026](https://khusoko.com/2026/08/11/cbk-holds-central-bank-rate-8-75-percent-august-2026/)) plus a lender's spread |
+| loss given default | 80% of principal | assumption; unsecured, small loans with costly recovery (CBK: 83.1% of loans under KSh 1,000 default, 16.4% NPL for KSh 50k-100k; [Business Daily, 2025](https://www.businessdailyafrica.com/bd/economy/borrowers-fail-to-repay-83pc-of-digital-loans-below-sh1000-5189888)); Basel's unsecured corporate benchmark is 45% |
+
+Net margin 6.5% a month gives thresholds of 0.075 (1-month loans), 0.196 (3-month) and
+0.328 (6-month). Results: `docs/results/decision_policies.csv`,
+`docs/results/decision_sensitivity.csv`, chart `docs/img/models_07_decision.png`.
+
+| policy (out-of-fold CV) | approved | default rate among approved | profit per 1,000 applicants |
+|---|---|---|---|
+| approve everyone | 100% | 19.9% | KSh 0.85M |
+| provisional 0.20 | 60% | 11.3% | KSh 1.40M |
+| best single cut-off (0.21) | 62% | 11.7% | KSh 1.42M |
+| cost-based rule | 49% | 12.0% | KSh 1.67M |
+
+**Findings**
+- The cost-based rule beats every single cut-off (+19% over the provisional 0.20).
+- The thresholds are optimal in practice: scaling all three, profit peaks at 1.05x; expected
+  profit (KSh 22.4M) matches realised (KSh 21.8M) within 2%. Both confirm the 3.10 calibration.
+- Validation (once): +KSh 0.87M per 1,000 applicants vs approving everyone (95% interval
+  +0.62M to +1.12M); +0.06M vs provisional 0.20, not significant on 2,808 applicants
+  (-0.11M to +0.24M).
+- Approval by term: 15% (1-month), 60% (3-month), 85% (6-month). A 1-month loan earns 6.5% if
+  repaid but loses 80% on default, so only very safe borrowers qualify; short loans need a
+  higher price or a longer term, not a looser rule.
+- Thin-file applicants are approved 34% of the time vs 62% for statement holders: uploading a
+  statement roughly doubles an applicant's chance (a design point for the app in Phase 5;
+  fairness by gender is audited in a later phase).
+- Sensitivity (net margin 3-10%/month x LGD 45-100%): the rule is profitable in all 16
+  scenarios; approving everyone loses money in 6.
+
+**Limitations.** The simulator's default rate does not depend on loan term (in practice longer
+loans usually default more), and the profit model is simplified: flat fee on principal, no
+partial repayment before default, no operating or acquisition costs.
+
+**Decision:** use the cost-based rule (`docs/results/decision_policy.json`). The API calls
+`decision.decide(p, term_months, policy)` for each applicant.

@@ -1,0 +1,5 @@
+policy,approval_rate,default_rate_approved,defaulters_caught,good_borrowers_declined,profit_kes,profit_per_1000_applicants_kes
+approve_everyone,1.0,0.1991,0.0,0.0,11109512.5,847924.9351
+provisional_0.20,0.5985,0.113,0.6603,0.3372,18299460.0,1396692.1081
+best_single_0.21,0.6217,0.1166,0.6357,0.3143,18613120.0,1420631.9646
+cost_rule,0.486,0.1204,0.7059,0.4663,21842122.5,1667083.0789

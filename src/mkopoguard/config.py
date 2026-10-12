@@ -122,3 +122,15 @@ CALIBRATION_METHODS = ("none", "sigmoid", "isotonic")  # sigmoid = Platt scaling
 # this: half a percentage point between predicted and actual default rates
 CALIBRATION_MIN_ECE_GAIN = 0.005
 CALIBRATION_FILE = PROJECT_ROOT / "docs" / "results" / "calibration.json"
+
+# --- Decision policy (step 3.11) -------------------------------------------------------
+# Business assumptions (see docs/evaluation_plan.md, "Decision threshold", for sources).
+# All are shares of the loan principal, charged as a flat monthly rate, as Kenyan digital
+# lenders typically price loans.
+MONTHLY_FEE_RATE = 0.075  # what the lender charges per month (M-Shwari's 7.5% benchmark)
+MONTHLY_FUNDING_COST = 0.01  # the lender's own cost of money, ~12% a year
+LOSS_GIVEN_DEFAULT = 0.80  # share of the principal lost when a borrower defaults
+# Ranges for the sensitivity analysis: how the decision moves if the assumptions are off
+SENSITIVITY_NET_MARGINS = (0.03, 0.05, 0.065, 0.10)
+SENSITIVITY_LGDS = (0.45, 0.60, 0.80, 1.00)
+DECISION_POLICY_FILE = PROJECT_ROOT / "docs" / "results" / "decision_policy.json"
