@@ -480,3 +480,139 @@ Used ISO country codes instead of names because "Côte d'Ivoire" gets mangled
 - Train on the data as it is. The imbalance is handled where it belongs: calibration (3.10) and a threshold based on what each mistake costs (3.11).
 
 **Next:** 3.6, tune logistic and XGBoost with Optuna.
+
+## 2026-10-12 — Step 3.6: Tuning with Optuna
+
+**Goal:** Find out whether better settings let logistic regression or XGBoost beat the untuned champion.
+
+**Did:**
+- Wrote `models/tuning.py` and `scripts/tune_models.py`: Optuna (TPE sampler, seed 2026) ran 40 logistic and 60 XGBoost trials. Each trial was scored by 5-fold CV on the training set only.
+- Trial 0 is always the untuned model, so the study measures its own gain on the same folds.
+- Logistic searched C and the L1/L2 mix (saga solver). XGBoost searched depth (down to 1), learning rate, trees, child weight, subsampling and regularisation.
+- The chosen settings are saved to `docs/results/tuned_params.json`. Later steps build models with `tuning.chosen_model()`.
+- Results:
+
+  | model | untuned CV PR-AUC | best tuned | gain | 1 fold std |
+  |---|---|---|---|---|
+  | logistic | 0.393 | 0.398 | +0.005 | 0.029 |
+  | XGBoost | 0.381 | 0.397 | +0.017 | 0.023 |
+
+- Tests (14): every suggested setting trains, the defaults are inside the search space, the same seed gives the same study, and the tie rule works both ways.
+
+**Broke / learned:**
+- XGBoost's best settings used `max_depth = 1`: one feature per tree, which is an additive model. Given the choice, boosting turned itself into a version of logistic regression, and its overfitting gap fell from 0.168 to 0.002. That confirms the 3.4 diagnosis: the data has no interactions to find.
+- Logistic's best settings were almost pure lasso, and lasso switched off 38 of 68 columns at no cost. That fed straight into 3.7.
+- Bug caught before running: the XGBoost defaults didn't list `reg_lambda` and `gamma`, so Optuna would have filled them in at random in trial 0. Fixed by adding XGBoost's own defaults.
+- The saga solver shuffles rows, so it needs `random_state` to be reproducible.
+
+**Decisions:**
+- Neither gain beats one fold std (rule 6), so the untuned settings stay. Picking the best of many trials is also slightly optimistic.
+- Champion: plain logistic regression (L2, C = 1).
+
+## 2026-10-12 — Step 3.7: Feature ablation
+
+**Goal:** Find which groups of inputs the model actually needs, so the application form can be shorter.
+
+**Did:**
+- Grouped the 43 inputs into 8 blocks the way an applicant experiences them (`features/groups.py`): loan, profile, financial access, income channels, savings & resilience, borrowing history, transfers, statement.
+- Added a `drop=` option to `input_columns`, `build_preprocessor`, `make_pipeline` and `run_experiment`. Dropped columns don't even need to be present when predicting, so the API never has to ask for them.
+- Removed one group at a time and compared each CV fold with the same fold of the full model (a paired comparison).
+- **Rule 7:** a group is needed if removing it causes a consistent loss (bigger than its standard error) that is also meaningful (more than 0.002 PR-AUC), for all applicants OR for thin-file applicants.
+- The combined drop had to pass the same test on CV, and then not lose clearly for any subgroup on validation (paired bootstrap).
+- Results: savings & resilience (+0.047) and the statement (+0.055) carry the model. Financial access, income channels and transfers are not needed.
+- Tests (20), including a known-answer pair: removing the only real signal shows as needed, and removing columns with no information shows as not needed.
+
+**Broke / learned:**
+- I nearly dropped borrowing history. An earlier procedure removed groups one after another and dropped it at the end, but the validation check showed thin-file applicants losing clearly (interval 0.005 to 0.036). That's why validation is now a gate on every drop.
+- Thin-file applicants have to be checked separately. Loan terms look useless overall (+0.001) but matter for them (+0.003), because without a statement there's no `stmt_loan_to_inflow`.
+- A "pure noise" test was flaky across random seeds. I replaced it with columns that carry no information at all (everyone gives the same answer), which gives an exact known answer.
+- Known-answer check against the simulator: both groups with no true driver were dropped, and every group with a strong driver was kept. Income channels feeds a weak driver but was dropped, because the statement already carries that signal.
+
+**Decisions:**
+- Drop financial access, income channels and transfers (`docs/results/feature_selection.json`).
+- Model inputs go from 43 to 32. **Survey questions go from 23 to 12.** CV PR-AUC went up slightly, from 0.3926 to 0.3950.
+
+## 2026-10-12 — Step 3.8: Learning curve
+
+**Goal:** Find out whether more applicants would improve the model, or whether it has learned all the inputs can tell it.
+
+**Did:**
+- Trained on 1/16, 1/8, 1/4, 1/2 and all of each CV fold's training rows (3 random draws for each smaller share). Every version was scored on the same full held-out fold.
+- Added a ceiling line: the PR-AUC of the simulator's *true* default probabilities (0.617). No model can beat it with any amount of data. It's read through `load_split`, so the test set stays locked.
+- Results: logistic gained +0.010 and then +0.003 from the last two doublings. The next doubling is projected at +0.001. XGBoost is still climbing (+0.011 per doubling), with an overfitting gap of 0.21.
+- Tests (14): stratified, reproducible subsampling, sizes that really double, a shrinking overfitting gap, the projection never predicting faster gains, and the ceiling beating a trained model.
+
+**Broke / learned:**
+- Each CV fold trains on 80% of the training set (10,482 applicants, not 13,102).
+- The first ceiling test failed: true probabilities that take only two values give ties, and PR-AUC handles ties badly. Fixed by making the made-up risk continuous.
+- The 0.22 gap to the ceiling is information the inputs don't carry (true discipline, income, noise), not a shortage of applicants.
+- The leakage alarm (0.65) sits just above the ceiling (0.617), which confirms it was set sensibly in 3.2.
+
+**Decisions:**
+- The 18,718-applicant pool is big enough, so I won't grow the simulation. XGBoost would need about 4× the data just to reach logistic's current score.
+
+## 2026-10-12 — Step 3.9: Leave-one-country-out
+
+**Goal:** Check that the model works in a country it has never seen, for a lender entering a new market.
+
+**Did:**
+- Wrote `models/country_transfer.py`. In each CV fold, each country's held-out applicants are scored twice: by the fold's model ("seen"), and by the same model retrained without that country ("never seen").
+- **Rule 9:** no country loses clearly (above 0.02 PR-AUC, beyond chance, with the interval widened for 20 countries), and no never-seen country is miscalibrated beyond chance (Bonferroni).
+- Added an optional `level` to `paired_bootstrap` (the default stays 95%).
+- Results: logistic's median loss is −0.0005 and its worst is +0.004 (Zimbabwe). Kenya: 0.433 seen → 0.435 never seen. XGBoost: Kenya −0.025, and Zimbabwe narrowly miscalibrated (z = 3.05 against a bar of 3.02).
+- Tests (8) on six made-up countries: "same rule" must transfer, "hidden extra risk in Kenya" must be flagged for calibration, and "a rule only Kenya has" must lose clearly. That last one proves the never-seen model really never saw the country.
+
+**Broke / learned:**
+- My first design (train on 19 countries, compare with ordinary CV) made every country look *better* when unseen. The 19-country model had about 12,400 training rows against 10,500 in a CV fold, so it was measuring more data, not transfer. The paired design changes only one thing.
+- The same trap appeared in the tests: with 3 small countries, hiding one removed a third of the data and caused false failures. Six countries of 2,000 applicants fixed it.
+- **The script failed on my machine with `ModuleNotFoundError: mkopoguard.models.calibration`.** 3.9 reuses the per-country calibration check from 3.10, and I had done 3.9 first. I did 3.10, then re-ran 3.9. Lesson: the guide's order is a dependency order, and a step can quietly rely on a later one.
+- Zimbabwe is a watch item: its default rate (27.4%) is above what its applicants' answers predict (22.8%), in both 3.9 and 3.10. The simulator has no country effect, so this is most likely chance.
+- Limitation: in the real Findex, `income_quintile` is relative within each country, but the simulator gives each quintile the same income everywhere, so this transfer risk can't show up here.
+
+**Decisions:**
+- The champion transfers to new countries. Country stays out of the model. Recheck with real repayment data and monitor calibration.
+
+## 2026-10-12 — Step 3.10: Calibration
+
+**Goal:** Make sure "20% chance of default" really means about 20 in 100, because the threshold in 3.11 depends on it.
+
+**Did:**
+- Wrote `models/calibration.py`. It produces out-of-fold predictions for every training applicant and measures ECE, Brier score, calibration slope and intercept, and calibration-in-the-large per group (with the flag bar raised for multiple comparisons).
+- Compared no calibration, sigmoid (Platt) and isotonic. Each calibrator learns from an inner 5-fold CV inside the training rows.
+- **Rule 8:** adopt a method only if it cuts ECE consistently and by more than 0.005, without worsening the Brier score or costing more than 0.002 PR-AUC.
+- Added a **positive control**: the class-weighted logistic from 3.5, which is miscalibrated on purpose.
+- Results: champion ECE 0.006, slope 0.96, average predicted 19.9% against an actual 19.9%. The control went from 45% predicted against 20% actual (ECE 0.253) to 19.9% (ECE 0.006) with Platt scaling. No country is flagged; Kenya is predicted at 17.4% against an actual 16.2%.
+- Added the calibration types to `SKOPS_TRUSTED_TYPES`, so a calibrated pipeline can be saved to MLflow.
+- Tests (21): true probabilities give slope ≈ 1, over-confident ones give slope ≈ 0.5, Platt fixes the control, a deliberately biased country is flagged, and a calibrated pipeline saves and reloads identically.
+
+**Broke / learned:**
+- A check that never finds anything proves nothing. The positive control shows the calibration code works when it's needed.
+- Multiple comparisons: at the usual 2-standard-error bar, 20 countries give about one false alarm by chance. Zimbabwe (z = 2.5) would have been flagged. Bonferroni raises the bar to 3.02.
+- Reliability-chart bins with only a few applicants make wild lines, so bins under 50 applicants are hidden on the chart (they stay in the CSV).
+- Logistic regression fitted by maximum likelihood is calibrated by construction. XGBoost is slightly over-confident (slope 0.85).
+
+**Decisions:**
+- No calibration (`docs/results/calibration.json`). The probabilities are used as the model gives them.
+
+## 2026-10-12 — Step 3.11: Cost-based decision threshold
+
+**Goal:** Replace the provisional 0.20 cut-off with a rule based on what each decision costs the lender.
+
+**Did:**
+- Researched Kenyan digital-lending figures. Fee: 7.5% a month (M-Shwari's 30-day price; Tala, Branch, Okolea and Zenka charge more). Funding cost: 1% a month (assumption; CBK rate 8.75%). Loss given default: 80% (assumption; CBK reports 83.1% of loans under KSh 1,000 default). Sources are in `evaluation_plan.md`, and all three are settings in `config.py`.
+- Derived the rule: approve when p < m·T / (m·T + LGD). The loan amount cancels out, but the term doesn't.
+- Thresholds: 0.075 (1-month loans), 0.196 (3-month), 0.328 (6-month).
+- Wrote `models/decision.py`, with `decide(p, term, policy)` for the API, and saved the policy to `docs/results/decision_policy.json`.
+- Results (CV profit per 1,000 applicants): approve everyone KSh 0.85M, provisional 0.20 KSh 1.40M, best single cut-off KSh 1.42M, **cost-based rule KSh 1.67M (+19%)**.
+- Validation: +KSh 0.87M against approving everyone (significant). +0.06M against the provisional 0.20, which isn't significant on 2,808 applicants.
+- A sensitivity grid (16 combinations of margin and LGD): the rule is profitable in all of them, while approving everyone loses money in 6.
+- Tests (19): the threshold is exactly the break-even point, and with known true risk, expected profit matches actual, the rule beats every single cut-off, and profit peaks at scale 1.0.
+
+**Broke / learned:**
+- The thresholds really are optimal. Scaling all three up or down, profit peaks at 1.05×, and expected profit matched actual within 2%. That's 3.10's calibration paying off.
+- Only 15% of 1-month loans get approved: a short loan earns 6.5% if repaid but loses 80% on default. That matches CBK's finding on tiny, short loans. The fix would be pricing or loan term, not a looser rule.
+- Thin-file applicants are approved 34% of the time, against 62% for statement holders. Uploading a statement roughly doubles an applicant's chance, which is a design point for Phase 5.
+- Limitations: the simulator's default rate doesn't depend on loan term, and the profit model is simplified (flat fee, no partial repayment, no operating costs).
+
+**Decisions:**
+- Use the cost-based rule with thresholds per loan term. The API will call `decision.decide()`.
