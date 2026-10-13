@@ -1,0 +1,3 @@
+
+# Model bundle (step 3.13): never change these bytes, or their checksums break
+models/champion/** -text

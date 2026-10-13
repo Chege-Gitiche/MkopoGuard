@@ -1,0 +1,37 @@
+{
+  "name": "mkopoguard-champion",
+  "version": "1.0.0",
+  "created_at": "2026-10-13T13:27:06Z",
+  "n_input_columns": 32,
+  "n_golden_examples": 24,
+  "environment": {
+    "python": "3.12.10",
+    "sklearn": "1.9.1",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "skops": "0.16.0"
+  },
+  "mlflow_run_id": "76e2ee2952374816b4e9c673a4ab20fa",
+  "git_commit_of_test": "02ea1e0",
+  "frozen_decisions": {
+    "tuned_params": "61fa9c901dcb",
+    "feature_selection": "58b00422f552",
+    "calibration": "220fb3329014",
+    "decision_policy": "a9317c66e038"
+  },
+  "test_pr_auc": 0.3986466978786322,
+  "trained_on": {
+    "applicants": 15910,
+    "splits": [
+      "train",
+      "validation"
+    ]
+  },
+  "files": {
+    "model.skops": "25acc8976706b452cdefcc6dc4c8e88084a05a6380f91fe89205dc41fbd252b4",
+    "input_schema.json": "a6b0501fc1d2cf865e790e01f45c5d9a1ae731d51bc72dae2d8d9b5ac710a2c1",
+    "decision_policy.json": "176ce8ec9e491e39d599054993432602e0acf6942ec5ce77d05b1c0cc71043d7",
+    "golden_examples.json": "17e49d282264e12e40ad6aba5c4ebf822f0431a26098d622d7c999cb3b49a25b",
+    "model_card.md": "ea696ab1407fc0fb1d594f1da525a18f741da2f6bf82f73a825d8ad04259a06a"
+  }
+}

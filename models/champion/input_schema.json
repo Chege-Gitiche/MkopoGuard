@@ -1,0 +1,267 @@
+{
+  "columns": [
+    "age",
+    "income_quintile",
+    "loan_amount_kes",
+    "term_months",
+    "stmt_avg_monthly_inflow",
+    "stmt_median_monthly_inflow",
+    "stmt_inflow_volatility",
+    "stmt_income_payments_per_month",
+    "stmt_days_since_last_income",
+    "stmt_p2p_in_share",
+    "stmt_betting_share",
+    "stmt_airtime_share",
+    "stmt_cash_out_share",
+    "stmt_paybill_months",
+    "stmt_overdraft_borrow_count",
+    "stmt_overdraft_repay_ratio",
+    "stmt_overdraft_outstanding_months",
+    "stmt_end_balance_months",
+    "stmt_low_balance_share",
+    "stmt_transactions_per_month",
+    "stmt_loan_to_inflow",
+    "has_statement",
+    "in_workforce",
+    "saved_past_year",
+    "saved_in_savings_club",
+    "borrowed_past_year",
+    "borrowed_from_fin_institution",
+    "borrowed_from_family_friends",
+    "borrowed_for_medical",
+    "education_level",
+    "emergency_fund_source",
+    "worried_about_bills"
+  ],
+  "fields": {
+    "age": {
+      "nullable": false,
+      "kind": "numeric",
+      "min": 18.0,
+      "max": 99.0
+    },
+    "income_quintile": {
+      "nullable": false,
+      "kind": "numeric",
+      "min": 1.0,
+      "max": 5.0
+    },
+    "loan_amount_kes": {
+      "nullable": false,
+      "kind": "numeric",
+      "min": 1000.0,
+      "max": 100000.0
+    },
+    "term_months": {
+      "nullable": false,
+      "kind": "numeric",
+      "min": 1.0,
+      "max": 6.0,
+      "allowed": [
+        1,
+        3,
+        6
+      ]
+    },
+    "stmt_avg_monthly_inflow": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 610.0,
+      "max": 257785.5
+    },
+    "stmt_median_monthly_inflow": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0,
+      "max": 260265.5
+    },
+    "stmt_inflow_volatility": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.006050020568677063,
+      "max": 1.5009330153174316
+    },
+    "stmt_income_payments_per_month": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.3333333333333333,
+      "max": 18.833333333333332
+    },
+    "stmt_days_since_last_income": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0009837962962962962,
+      "max": 89.98681712962963
+    },
+    "stmt_p2p_in_share": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0,
+      "max": 0.3084960231381056
+    },
+    "stmt_betting_share": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0,
+      "max": 0.3888936965186539
+    },
+    "stmt_airtime_share": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0036263050481539576,
+      "max": 0.5823076923076923
+    },
+    "stmt_cash_out_share": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.25017498833411106,
+      "max": 0.9917699929611782
+    },
+    "stmt_paybill_months": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0,
+      "max": 6.0
+    },
+    "stmt_overdraft_borrow_count": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0,
+      "max": 228.0
+    },
+    "stmt_overdraft_repay_ratio": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0,
+      "max": 1.0
+    },
+    "stmt_overdraft_outstanding_months": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0,
+      "max": 2.154917785740598
+    },
+    "stmt_end_balance_months": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0,
+      "max": 4.347146194926569
+    },
+    "stmt_low_balance_share": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.0,
+      "max": 0.9283276450511946
+    },
+    "stmt_transactions_per_month": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 4.333333333333333,
+      "max": 118.66666666666667
+    },
+    "stmt_loan_to_inflow": {
+      "nullable": true,
+      "kind": "numeric",
+      "min": 0.19645722144003142,
+      "max": 5.092104557880256
+    },
+    "has_statement": {
+      "nullable": false,
+      "kind": "binary",
+      "allowed": [
+        0,
+        1
+      ]
+    },
+    "in_workforce": {
+      "nullable": false,
+      "kind": "binary",
+      "allowed": [
+        0,
+        1
+      ]
+    },
+    "saved_past_year": {
+      "nullable": false,
+      "kind": "binary",
+      "allowed": [
+        0,
+        1
+      ]
+    },
+    "saved_in_savings_club": {
+      "nullable": true,
+      "kind": "binary",
+      "allowed": [
+        0,
+        1
+      ]
+    },
+    "borrowed_past_year": {
+      "nullable": false,
+      "kind": "binary",
+      "allowed": [
+        0,
+        1
+      ]
+    },
+    "borrowed_from_fin_institution": {
+      "nullable": true,
+      "kind": "binary",
+      "allowed": [
+        0,
+        1
+      ]
+    },
+    "borrowed_from_family_friends": {
+      "nullable": true,
+      "kind": "binary",
+      "allowed": [
+        0,
+        1
+      ]
+    },
+    "borrowed_for_medical": {
+      "nullable": true,
+      "kind": "binary",
+      "allowed": [
+        0,
+        1
+      ]
+    },
+    "education_level": {
+      "nullable": true,
+      "kind": "categorical",
+      "allowed": [
+        "missing",
+        "primary_or_less",
+        "secondary",
+        "tertiary"
+      ]
+    },
+    "emergency_fund_source": {
+      "nullable": true,
+      "kind": "categorical",
+      "allowed": [
+        "borrowing",
+        "could_not",
+        "family_friends",
+        "missing",
+        "other",
+        "savings",
+        "selling_assets",
+        "work"
+      ]
+    },
+    "worried_about_bills": {
+      "nullable": true,
+      "kind": "categorical",
+      "allowed": [
+        "missing",
+        "not_at_all",
+        "somewhat",
+        "very"
+      ]
+    }
+  }
+}

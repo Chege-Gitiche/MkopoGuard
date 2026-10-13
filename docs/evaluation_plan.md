@@ -314,3 +314,22 @@ KSh 1.77M per 1,000 applicants, +KSh 0.87M vs approving everyone (95% interval +
 
 **These are the project's final model numbers.** Any later change to the model needs a new,
 untouched test set.
+
+## Packaging (step 3.13)
+
+The champion tested in 3.12 (MLflow run `champion_final`, not retrained) is packaged as
+`models/champion/` (v1.0.0): the pipeline (`model.skops`), the input schema, the decision policy,
+24 golden examples (validation applicants, every loan term x statement / thin-file), a model
+card generated from the test report, and a manifest with library versions and a SHA-256 of
+every file. The bundle is committed to Git so the API and CI need no MLflow.
+
+**Safeguards.** Packaging is refused if a decision file changed after the test (line endings
+excepted). Loading refuses files that don't match their checksums, warns on a different
+scikit-learn version, and replays the golden examples (tolerance 1e-9). Inputs are checked
+before scoring: errors (missing columns, empty or mistyped values, a loan term other than 1, 3
+or 6) are refused; unseen categories and out-of-range numbers are scored but flagged. Bundles
+are built in a staging folder and only replace the old one after every check passes.
+
+**Check.** Reloaded from disk, the bundle gave exactly the same probabilities as the MLflow
+model on all 2,808 validation applicants (maximum difference 0.0). CI reloads the committed
+bundle on Linux and replays its golden examples on every push.

@@ -1,0 +1,11 @@
+{
+  "monthly_fee_rate": 0.075,
+  "monthly_funding_cost": 0.01,
+  "net_margin_per_month": 0.065,
+  "loss_given_default": 0.8,
+  "thresholds_by_term_months": {
+    "1": 0.07514450867052024,
+    "3": 0.19597989949748743,
+    "6": 0.3277310924369748
+  }
+}
