@@ -616,3 +616,77 @@ Used ISO country codes instead of names because "Côte d'Ivoire" gets mangled
 
 **Decisions:**
 - Use the cost-based rule with thresholds per loan term. The API will call `decision.decide()`.
+
+## 2026-10-13 — Step 3.12: Open the test set, once
+
+**Goal:** Get an honest final score for the champion on applicants it has never seen, in a way that makes it impossible to quietly tune on the test set.
+
+**Did:**
+- Wrote `models/final.py` and `scripts/final_test.py`. Before the test set opens:
+  - the four decision files (3.6 settings, 3.7 feature groups, 3.10 calibration, 3.11 decision rule) are fingerprinted into the report;
+  - the script refuses to run if Git shows uncommitted changes (a `-dirty` commit);
+  - a second opening needs a written `--rerun-reason`, and every opening is logged in `docs/results/test_runs.log`.
+- Refitted the champion on training + validation (15,910 applicants) with the frozen settings, then scored the 2,808 test applicants once.
+- The report has ranking metrics with 95% bootstrap intervals, calibration, the decision rule's profit, every subgroup, the validation prediction for comparison, and the ceiling (the true probabilities).
+- Logged the final model to MLflow as `champion_final` (`evaluated_on = test`) for packaging.
+- Results:
+
+  | measure | test | 95% interval | validation (expected) |
+  |---|---|---|---|
+  | PR-AUC | 0.399 | 0.360-0.443 | 0.412 |
+  | ROC-AUC | 0.717 | 0.693-0.740 | 0.717 |
+  | KS | 0.338 | 0.300-0.384 | 0.337 |
+
+  Calibration: ECE 0.015, with 19.7% predicted against 19.8% actual. The cost rule approved 49% of applicants, 11.0% of those approved defaulted, and it earned +KSh 0.87M per 1,000 applicants compared with approving everyone.
+- Tests (11): uncommitted code is refused, a second opening needs a reason, every opening is logged, a changed decision changes its fingerprint, and the report is checked on made-up data with a known true risk.
+
+**Broke / learned:**
+- The lock caught a real mistake while the step was being built. The first run crashed *after* writing the report (a missing import in the MLflow logging), so the second run was refused until a reason was given. That's exactly what the log is for: it shows the test set was opened twice, why, and that the model didn't change.
+- A function named `test_report` could be picked up by pytest as a test if a test file imports it, so it's called `build_report`.
+- The test score came in slightly below validation (0.399 vs 0.412), as expected: every validation score includes some luck. Validation's prediction fell inside the test interval for every group.
+- Kenya's interval is very wide (0.21-0.54): 144 applicants include only about 23 defaulters. The 3.9 transfer result (667 Kenyans) is the better evidence for Kenya.
+- How good is it? ROC-AUC 0.72 (Gini 0.43) and KS 0.34 are in the "good" band of common credit-scoring rules of thumb. The riskiest fifth of applicants default about 6.7× as often as the safest fifth. Synthetic data is cleaner than real life, though, so I won't claim it beats real-world models (a real study of thin-file phone-based scoring found 2.8×).
+
+**Decisions:**
+- These are the project's final model numbers. Nothing about the model changes because of them; any later change needs a new, untouched test set.
+
+## 2026-10-13 — Step 3.13: Package the champion
+
+**Goal:** Turn the tested model into one self-contained, tamper-evident folder that the FastAPI backend can load without MLflow or training data.
+
+**Did:**
+- Wrote `src/mkopoguard/bundle.py`, `src/mkopoguard/model_card.py` and `scripts/package_model.py`.
+- Built `models/champion/` (v1.0.0) from the exact `champion_final` run, not retrained. It contains:
+  - `model.skops`: the fitted pipeline
+  - `input_schema.json`: all 32 columns, with their kind, allowed categories and training ranges; loan term must be 1, 3 or 6
+  - `decision_policy.json`
+  - `golden_examples.json`: 24 validation applicants, 4 for each loan term × statement/thin-file, with exact expected outputs
+  - `model_card.md`: generated from `test_report.json`, so no number is typed by hand
+  - `manifest.json`: version, MLflow run, frozen decisions, library versions, and a SHA-256 of every file
+- Safeguards:
+  - packaging is refused if a decision file changed after the test;
+  - loading refuses files that fail their checksum;
+  - loading warns on a different scikit-learn version and replays the golden examples (tolerance 1e-9);
+  - inputs are checked before scoring: errors are refused, and unusual values are scored but flagged.
+- The bundle is committed to Git (with a `.gitattributes` rule so Git never touches its bytes), so CI reloads it on Linux and replays the golden examples on every push.
+- Check: reloaded from disk, the bundle gave exactly the same probabilities as the MLflow model on all 2,808 validation applicants (maximum difference 0.0).
+- Tests (26): 20 attack a small made-up bundle (an edited file, a deleted file, no manifest, a changed golden answer with a *matching* checksum, a version mismatch, every kind of bad input). 6 check the real shipped bundle against the test report, the kept feature groups and the decision policy, and confirm no forbidden column is an input.
+
+**Broke / learned:**
+- The first build crashed halfway and left half a bundle behind. In pandas 3, `groupby().apply()` drops the grouping columns, so picking the golden examples failed. I rewrote that part without `apply`, and made the script build in a staging folder that only replaces `models/champion/` after every check passes.
+- **Line endings break checksums.** On Windows, Python's `write_text` writes `\r\n`, and Git may convert line endings on checkout, so a bundle built on my PC would fail its checksums in CI on Linux. Fixed by writing every bundle file with `\n`, and by adding `models/champion/** -text` to `.gitattributes`.
+- For the same reason, the packaging check accepts a decision file whose *only* change is line endings, but refuses any real edit. I tested both: switching `calibration.json` to `\r\n` passed, and changing its method to `sigmoid` was refused.
+- A checksum alone isn't enough. Someone could edit a golden answer and update the checksum to match. Replaying the golden examples catches that, because the model's real output no longer matches the stored answer.
+
+**Decisions:**
+- Golden examples come from validation applicants, so the test set stays closed after 3.12.
+- An input with an unseen category or an out-of-range number is still scored but flagged. Missing or mistyped values are refused. The API will turn these into clear messages for the loan officer.
+
+**Next:** Phase 4, the FastAPI backend: load the bundle at start-up, validate requests from the schema, `/predict`, officer login and prediction history.
+
+## Phase 3 summary
+
+- **Champion:** plain logistic regression, uncalibrated, 32 inputs (the survey form drops from 23 questions to 12), with a cost-based approve/decline rule per loan term.
+- **Rejected along the way:** random forest, LightGBM and XGBoost (they overfit, and tuning just turned XGBoost into an additive model), class weights and SMOTE (no ranking gain, broken probabilities), country as an input, tuned settings (gains within noise), more data (the curve has flattened), recalibration (the probabilities were already honest), and a single cut-off (the per-term rule earns 19% more).
+- **Test set (opened once):** PR-AUC 0.399 (0.360-0.443), ROC-AUC 0.717, ECE 0.015, +KSh 0.87M per 1,000 applicants compared with approving everyone.
+- **Tests:** 412 locally; CI 383 passed, 29 skipped.
