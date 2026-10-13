@@ -1,0 +1,123 @@
+{
+  "n": 2808,
+  "default_rate": 0.19764957264957264,
+  "ranking": {
+    "pr_auc": {
+      "value": 0.3986466978786322,
+      "low": 0.3596992057791532,
+      "high": 0.44266986002784275
+    },
+    "roc_auc": {
+      "value": 0.7166388758932034,
+      "low": 0.6927641281667672,
+      "high": 0.7397184624156972
+    },
+    "ks": {
+      "value": 0.3375439354134427,
+      "low": 0.299910301620308,
+      "high": 0.3844503166386379
+    }
+  },
+  "calibration": {
+    "pr_auc": 0.3986466978786322,
+    "brier": 0.14245220852060578,
+    "ece": 0.015399886124960507,
+    "slope": 0.9310648553506566,
+    "intercept": -0.08045018975607827,
+    "mean_predicted": 0.19689256033417243,
+    "default_rate": 0.19764957264957264
+  },
+  "decision": {
+    "cost_rule": {
+      "policy": "cost_rule",
+      "approval_rate": 0.49038461538461536,
+      "default_rate_approved": 0.11038489469862019,
+      "defaulters_caught": 0.7261261261261261,
+      "good_borrowers_declined": 0.4562805148690635,
+      "profit_kes": 4979427.5,
+      "profit_per_1000_applicants_kes": 1773300.3917378916
+    },
+    "approve_everyone": {
+      "policy": "approve_everyone",
+      "approval_rate": 1.0,
+      "default_rate_approved": 0.19764957264957264,
+      "defaulters_caught": 0.0,
+      "good_borrowers_declined": 0.0,
+      "profit_kes": 2525210.0,
+      "profit_per_1000_applicants_kes": 899291.3105413105
+    },
+    "gain_vs_approve_everyone_per_1000": {
+      "difference": 874009.0811965811,
+      "low": 611504.2957621083,
+      "high": 1129467.5925925926
+    }
+  },
+  "groups": {
+    "all": {
+      "n": 2808.0,
+      "default_rate": 0.19764957264957264,
+      "mean_predicted": 0.19689256033417243,
+      "pr_auc": 0.3986466978786322,
+      "pr_auc_low": 0.3596992057791532,
+      "pr_auc_high": 0.44266986002784275,
+      "ece": 0.015399886124960507,
+      "approval_rate": 0.49038461538461536,
+      "default_rate_approved": 0.11038489469862019
+    },
+    "kenya": {
+      "n": 144.0,
+      "default_rate": 0.1597222222222222,
+      "mean_predicted": 0.17913066369449884,
+      "pr_auc": 0.3419491103238783,
+      "pr_auc_low": 0.20778390696659127,
+      "pr_auc_high": 0.5422835300357719,
+      "ece": 0.05303617952280725,
+      "approval_rate": 0.5,
+      "default_rate_approved": 0.08333333333333333
+    },
+    "statement": {
+      "n": 1476.0,
+      "default_rate": 0.1659891598915989,
+      "mean_predicted": 0.1684113277232185,
+      "pr_auc": 0.41209291335793496,
+      "pr_auc_low": 0.3533005188609819,
+      "pr_auc_high": 0.472473309956286,
+      "ece": 0.025074105368273557,
+      "approval_rate": 0.6104336043360433,
+      "default_rate_approved": 0.09988901220865705
+    },
+    "thin_file": {
+      "n": 1332.0,
+      "default_rate": 0.23273273273273273,
+      "mean_predicted": 0.22845284511928357,
+      "pr_auc": 0.3854923743843532,
+      "pr_auc_low": 0.3370219603955716,
+      "pr_auc_high": 0.4417721226217843,
+      "ece": 0.010895798559005273,
+      "approval_rate": 0.35735735735735735,
+      "default_rate_approved": 0.13025210084033614
+    }
+  },
+  "opened_at_commit": "02ea1e0",
+  "rerun_reason": null,
+  "frozen_decisions": {
+    "tuned_params": "61fa9c901dcb",
+    "feature_selection": "58b00422f552",
+    "calibration": "220fb3329014",
+    "decision_policy": "a9317c66e038"
+  },
+  "trained_on": {
+    "applicants": 15910,
+    "splits": [
+      "train",
+      "validation"
+    ]
+  },
+  "validation_pr_auc_by_group": {
+    "all": 0.41519271856497353,
+    "kenya": 0.4021277471661852,
+    "statement": 0.44377190490935203,
+    "thin_file": 0.3878892601131159
+  },
+  "ceiling_pr_auc": 0.6188101545967386
+}

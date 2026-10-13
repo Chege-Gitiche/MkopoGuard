@@ -272,3 +272,45 @@ partial repayment before default, no operating or acquisition costs.
 
 **Decision:** use the cost-based rule (`docs/results/decision_policy.json`). The API calls
 `decision.decide(p, term_months, policy)` for each applicant.
+
+## Final test (step 3.12)
+
+**Procedure.** The four decision files (3.6 settings, 3.7 feature groups, 3.10 calibration,
+3.11 decision rule) were fingerprinted into the report; the code was committed first (the
+script refuses uncommitted changes); the champion was refitted on training + validation
+(15,910 applicants) and scored once on the 2,808 test applicants. Every opening of the test set
+is logged in `docs/results/test_runs.log`; a second opening requires a written reason. Nothing
+about the model was changed after the test. Results: `docs/results/test_report.json`,
+`docs/results/test_by_group.csv`, chart `docs/img/models_08_final_test.png`.
+
+| measure | test | 95% interval | validation (expected) |
+|---|---|---|---|
+| PR-AUC | 0.399 | 0.360-0.443 | 0.412 |
+| ROC-AUC | 0.717 | 0.693-0.740 | 0.717 |
+| KS | 0.338 | 0.300-0.384 | 0.337 |
+| ceiling (true probabilities) | 0.619 | | |
+| no-skill baseline | 0.198 | | |
+
+Calibration: ECE 0.015, slope 0.93, intercept -0.08; mean predicted 19.7% vs actual 19.8%.
+Cost-based rule: approves 49%; defaults among approved 11.0% (vs 19.8% overall); profit
+KSh 1.77M per 1,000 applicants, +KSh 0.87M vs approving everyone (95% interval +0.61M to +1.13M).
+
+| group | n | PR-AUC (95% interval) | approved |
+|---|---|---|---|
+| all | 2,808 | 0.399 (0.360-0.443) | 49% |
+| Kenya | 144 | 0.342 (0.208-0.542) | 50% |
+| statement | 1,476 | 0.412 (0.353-0.472) | 61% |
+| thin-file | 1,332 | 0.385 (0.337-0.442) | 36% |
+
+**Reading the result**
+- Validation's prediction held: every group's validation PR-AUC lies inside its test interval.
+  The test is slightly lower (0.399 vs 0.412), as expected once the luck in a validation score
+  is removed.
+- The model ranks at about twice the no-skill level; the gap to the 0.62 ceiling is information
+  the inputs don't carry (3.8).
+- Probabilities stay honest on new applicants. The leakage alarm did not fire.
+- Kenya's test interval is too wide to be informative (144 applicants, ~23 defaulters); the
+  leave-one-country-out result in 3.9 (667 Kenyans) is the better evidence for Kenya.
+
+**These are the project's final model numbers.** Any later change to the model needs a new,
+untouched test set.
