@@ -134,3 +134,7 @@ LOSS_GIVEN_DEFAULT = 0.80  # share of the principal lost when a borrower default
 SENSITIVITY_NET_MARGINS = (0.03, 0.05, 0.065, 0.10)
 SENSITIVITY_LGDS = (0.45, 0.60, 0.80, 1.00)
 DECISION_POLICY_FILE = PROJECT_ROOT / "docs" / "results" / "decision_policy.json"
+
+# --- Final test (step 3.12) ------------------------------------------------------------
+TEST_REPORT_FILE = PROJECT_ROOT / "docs" / "results" / "test_report.json"
+TEST_RUNS_LOG = PROJECT_ROOT / "docs" / "results" / "test_runs.log"
