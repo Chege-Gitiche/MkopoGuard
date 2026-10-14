@@ -333,3 +333,39 @@ are built in a staging folder and only replace the old one after every check pas
 **Check.** Reloaded from disk, the bundle gave exactly the same probabilities as the MLflow
 model on all 2,808 validation applicants (maximum difference 0.0). CI reloads the committed
 bundle on Linux and replays its golden examples on every push.
+
+## Global explanations (step 4.1)
+
+SHAP values for the packaged champion, computed exactly (for a logistic regression,
+contribution = coefficient x (value - background average), per transformed column, then added
+up per input). Explained on the 15,910 development applicants; the test set stays closed.
+Results: `docs/results/shap_importance.csv`, `docs/results/shap_groups.csv`, chart
+`docs/img/explain_01_global.png`.
+
+**Checks**
+1. Additivity: base value + contributions = the model's log-odds for every applicant
+   (largest gap 1.8e-15).
+2. Identical to `shap.LinearExplainer` with the full background (difference 0.0).
+3. Known answer (the simulator's drivers are known): PASS. The top 10 inputs (statement flag
+   aside) are all real drivers; non-drivers carry 8.0% of the total importance (limit 15%).
+
+| rank | input | simulator driver | mean abs SHAP |
+|---|---|---|---|
+| 1 | saved_past_year | yes (direct, stress) | 0.309 |
+| 2 | has_statement | statement flag | 0.302 |
+| 3 | stmt_betting_share | yes (strongest weight) | 0.284 |
+| 4 | worried_about_bills | yes (stress) | 0.263 |
+| 5 | in_workforce | yes | 0.165 |
+| 6-9 | loan_amount_kes, income_quintile, borrowed_for_medical, emergency_fund_source | yes | 0.13-0.14 |
+
+**Findings**
+- `has_statement` carries the whole thin-file difference: for thin-file applicants every
+  statement feature is filled with its training median, so the statement block's contribution
+  is identical for all of them (spread 1e-17). Reason codes must treat the statement as one
+  block and never cite a statement feature for an applicant with no statement.
+- Age is a real driver the model barely uses (rank 30): the simulator makes only 18-24 year olds
+  riskier (a step), which one linear age term can't capture. A model limitation, not a bug.
+- `stmt_airtime_share` (a non-driver) has a counter-intuitive sign: high airtime spending goes
+  with more defaults in the raw data (a sign of low income), but once income is in the model the
+  remaining effect flips. Harmless for ranking; to be handled in reason codes (4.2) and the
+  directional tests (4.3).
