@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from mkopoguard import config
-from mkopoguard.api import auth
+from mkopoguard.api import auth, predict
 from mkopoguard.api.db import check_schema, database_ok, make_engine, make_sessions
 from mkopoguard.api.settings import Settings, get_settings
 from mkopoguard.bundle import load_bundle
@@ -49,6 +49,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         revision = check_schema(engine)  # raises if `alembic upgrade head` wasn't run
         app.state.bundle, app.state.engine = bundle, engine
         app.state.sessions = make_sessions(engine)
+        app.state.reasoner = bundle.reasoner()  # reason codes from the bundle alone (v1.1.0)
         app.state.started = time.monotonic()
         log.info(
             "Serving %s v%s (%s)",
@@ -82,6 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.include_router(auth.router)
+    app.include_router(predict.router)
 
     # Last, so every API route above takes precedence over a file of the same name
     app.mount("/", StaticFiles(directory=settings.frontend_dir, html=True), name="frontend")
