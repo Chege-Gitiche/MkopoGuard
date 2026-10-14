@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from mkopoguard import config
+from mkopoguard.api import auth
 from mkopoguard.api.db import check_schema, database_ok, make_engine, make_sessions
 from mkopoguard.api.settings import Settings, get_settings
 from mkopoguard.bundle import load_bundle
@@ -79,6 +80,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             database="ok" if database_ok(request.app.state.engine) else "unavailable",
             uptime_seconds=round(time.monotonic() - request.app.state.started, 1),
         )
+
+    app.include_router(auth.router)
 
     # Last, so every API route above takes precedence over a file of the same name
     app.mount("/", StaticFiles(directory=settings.frontend_dir, html=True), name="frontend")

@@ -30,6 +30,10 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     engine = make_engine(url)
     with engine.connect() as connection:
+        sqlite = connection.dialect.name == "sqlite"
+        if sqlite:  # batch mode drops and rebuilds tables; keys are checked afterwards instead
+            connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            connection.commit()  # end the implicit transaction, so Alembic's own one commits
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
@@ -38,6 +42,13 @@ def run_migrations_online() -> None:
         )
         with context.begin_transaction():
             context.run_migrations()
+            if sqlite:
+                broken = connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall()
+                if broken:
+                    raise RuntimeError(f"Migration broke foreign keys: {broken[:5]}")
+        if sqlite:
+            connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+            connection.commit()
     engine.dispose()
 
 

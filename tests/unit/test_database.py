@@ -193,3 +193,35 @@ def test_health_reports_the_database(url):
     settings = Settings(_env_file=None, secret_key=SECRET, database_url=url)
     with TestClient(create_app(settings)) as client:
         assert client.get("/health").json()["database"] == "ok"
+
+
+def test_migrations_keep_existing_history(tmp_path):
+    """Regression (step 5.3): rebuilding `users` on SQLite must not fail, or lose rows, while
+    predictions point at it."""
+    url = f"sqlite:///{(tmp_path / 'history.db').as_posix()}"
+    db.upgrade(url, "0001")
+    engine = db.make_engine(url)
+    with db.make_sessions(engine)() as session:
+        session.add(prediction(officer()))
+        session.commit()
+    db.upgrade(url)
+    db.downgrade(url, "0001")
+    db.upgrade(url)
+    with db.make_sessions(engine)() as session:
+        saved = session.scalars(select(Prediction)).one()
+        assert saved.officer.email == "asha.wanjiru@example.com"
+    with engine.connect() as connection:
+        assert connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall() == []
+        assert connection.exec_driver_sql("PRAGMA foreign_keys").scalar() == 1
+
+
+def test_times_are_always_returned_in_utc(session):
+    from datetime import UTC, datetime, timedelta, timezone
+
+    nairobi = timezone(timedelta(hours=3))
+    session.add(prediction(officer(), created_at=datetime(2026, 10, 14, 13, 0, tzinfo=nairobi)))
+    session.commit()
+    session.expire_all()
+    saved = session.scalars(select(Prediction)).one()
+    assert saved.created_at == datetime(2026, 10, 14, 10, 0, tzinfo=UTC)
+    assert saved.created_at.utcoffset() == timedelta(0)

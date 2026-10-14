@@ -20,3 +20,6 @@ pydantic-settings
 httpx
 sqlalchemy
 alembic
+bcrypt
+pyjwt
+python-multipart

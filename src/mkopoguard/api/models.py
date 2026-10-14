@@ -26,10 +26,11 @@ from sqlalchemy import (
     Integer,
     MetaData,
     String,
+    TypeDecorator,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, validates
 
-ROLES = ("officer", "admin")
+ROLES = ("officer", "admin", "demo")  # demo: read-only (migration 0002)
 DECISIONS = ("approve", "decline")
 
 # Fixed names for every constraint and index, so migrations can refer to them on any database
@@ -44,6 +45,24 @@ NAMING = {
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+class UTCDateTime(TypeDecorator):
+    """A timestamp that is always UTC: converted to UTC when saved, labelled UTC when read
+    (SQLite stores no timezone, Postgres does; both now behave the same)."""
+
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None and value.tzinfo is not None:
+            value = value.astimezone(UTC)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None and value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return value
 
 
 def _quoted(values: tuple[str, ...]) -> str:
@@ -64,7 +83,7 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(120))
     role: Mapped[str] = mapped_column(String(20), default="officer")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
 
     predictions: Mapped[list["Prediction"]] = relationship(
         back_populates="officer", order_by="Prediction.created_at.desc()"
@@ -99,7 +118,7 @@ class Prediction(Base):
     decision: Mapped[str] = mapped_column(String(10))
     reasons: Mapped[dict] = mapped_column(JSON)
     model_version: Mapped[str] = mapped_column(String(20))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
 
     officer: Mapped[User] = relationship(back_populates="predictions")
 
