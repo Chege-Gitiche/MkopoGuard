@@ -61,7 +61,7 @@ def test_migration_creates_both_tables_with_every_column(url):
     }  # fmt: skip
     assert predictions == {
         "id", "officer_id", "applicant_ref", "inputs", "probability", "band", "decision",
-        "reasons", "model_version", "created_at",
+        "reasons", "model_version", "created_at", "threshold",
     }  # fmt: skip
 
 
@@ -201,15 +201,24 @@ def test_migrations_keep_existing_history(tmp_path):
     url = f"sqlite:///{(tmp_path / 'history.db').as_posix()}"
     db.upgrade(url, "0001")
     engine = db.make_engine(url)
-    with db.make_sessions(engine)() as session:
-        session.add(prediction(officer()))
-        session.commit()
+    with engine.begin() as connection:  # rows as they were at 0001: plain SQL, not today's model
+        connection.exec_driver_sql(
+            "INSERT INTO users (id, email, hashed_password, full_name, role, is_active, "
+            "created_at) VALUES (1, 'asha.wanjiru@example.com', 'h', 'Asha', 'officer', 1, "
+            "'2026-10-01 09:00:00')"
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO predictions (officer_id, applicant_ref, inputs, probability, band, "
+            "decision, reasons, model_version, created_at) VALUES (1, 'APP-1', '{}', 0.2, "
+            "'high', 'decline', '{}', '1.0.0', '2026-10-01 09:00:00')"
+        )
     db.upgrade(url)
     db.downgrade(url, "0001")
     db.upgrade(url)
     with db.make_sessions(engine)() as session:
         saved = session.scalars(select(Prediction)).one()
         assert saved.officer.email == "asha.wanjiru@example.com"
+        assert saved.threshold is None  # made before 0003: no threshold was kept
     with engine.connect() as connection:
         assert connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall() == []
         assert connection.exec_driver_sql("PRAGMA foreign_keys").scalar() == 1

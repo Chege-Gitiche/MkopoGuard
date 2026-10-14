@@ -103,6 +103,9 @@ class Prediction(Base):
     __table_args__ = (
         CheckConstraint("probability >= 0 AND probability <= 1", name="probability_range"),
         CheckConstraint(f"decision IN ({_quoted(DECISIONS)})", name="decision_allowed"),
+        CheckConstraint(
+            "threshold IS NULL OR (threshold >= 0 AND threshold <= 1)", name="threshold_range"
+        ),
         # An officer's history, newest first (step 5.6), is one index lookup
         Index("ix_predictions_officer_created", "officer_id", "created_at"),
     )
@@ -116,6 +119,8 @@ class Prediction(Base):
     probability: Mapped[float] = mapped_column(Float)
     band: Mapped[str] = mapped_column(String(20))
     decision: Mapped[str] = mapped_column(String(10))
+    # The cut-off the decision was made against (migration 0003; empty for older predictions)
+    threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
     reasons: Mapped[dict] = mapped_column(JSON)
     model_version: Mapped[str] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)

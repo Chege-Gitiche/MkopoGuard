@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from mkopoguard import config
-from mkopoguard.api import auth, predict
+from mkopoguard.api import auth, history, predict
 from mkopoguard.api.db import check_schema, database_ok, make_engine, make_sessions
 from mkopoguard.api.settings import Settings, get_settings
 from mkopoguard.bundle import load_bundle
@@ -84,6 +84,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(predict.router)
+    app.include_router(history.router)
 
     # Last, so every API route above takes precedence over a file of the same name
     app.mount("/", StaticFiles(directory=settings.frontend_dir, html=True), name="frontend")

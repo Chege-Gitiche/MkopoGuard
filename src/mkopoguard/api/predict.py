@@ -92,6 +92,7 @@ def predict(
             probability=result["probability_of_default"],
             band=result["band"],
             decision=result["decision"],
+            threshold=result["threshold"],
             reasons=result["reasons"],
             model_version=result["model_version"],
             created_at=created,
