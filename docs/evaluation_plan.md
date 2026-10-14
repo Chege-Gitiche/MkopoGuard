@@ -369,3 +369,35 @@ Results: `docs/results/shap_importance.csv`, `docs/results/shap_groups.csv`, cha
   with more defaults in the raw data (a sign of low income), but once income is in the model the
   remaining effect flips. Harmless for ranking; to be handled in reason codes (4.2) and the
   directional tests (4.3).
+
+## Reason codes (step 4.2)
+
+`src/mkopoguard/explain/reasons.py` gives every applicant the 3 reasons raising their risk most
+and the 2 lowering it most: a stable code, a plain-English sentence using the applicant's own
+values, the direction, the contribution (log-odds), the impact in percentage points and a
+strength label (major 5+, moderate 1-5, minor under 1). Results:
+`docs/results/reason_code_frequency.csv`, `docs/results/reason_examples.json`, chart
+`docs/img/explain_02_reason_codes.png`.
+
+**Rules**
+1. Related inputs are explained together (e.g. the three overdraft features are one reason).
+2. Thin-file applicants get one statement reason, "No M-Pesa statement provided"; never a
+   statement feature (they are filled-in averages, step 4.1).
+3. Statement holders are compared with the typical statement holder. A first version compared
+   them with the average applicant (half of whom have no statement), and "Provided a 6-month
+   M-Pesa statement" became a top reason for 50% of holders, including heavy bettors; now 1%.
+   Only constants move between reasons; the total is unchanged.
+4. Only the simulator's drivers can be reasons; non-drivers are reported as one "other factors"
+   total. Their in-model directions contradict the raw data (airtime: more spending, more
+   defaults, but lower model risk; cash-out: the reverse; primary education: most defaults but
+   lower model risk). "Other factors" is flagged as material when it is as large as a stated
+   reason and at least 1 point (19% of applicants).
+
+**Checked on all 15,910 development applicants:** always exactly 3 + 2 different, readable
+reasons in order; no statement reason for any thin-file applicant; reasons + other factors =
+the score exactly (gap 1.8e-15). In 0.7% of slots (very safe applicants), fewer than 3 factors
+raise risk; the slot is filled to keep 3 + 2 but its direction says "lowers". About 60 ms
+per applicant.
+
+**Most frequent reasons:** saved in the past year (88% of applicants), bill worry (78%),
+betting (51%), loan amount (50%).

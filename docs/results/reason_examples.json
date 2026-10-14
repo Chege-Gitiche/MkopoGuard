@@ -1,0 +1,164 @@
+{
+  "risky_statement_holder": {
+    "applicant_id": "A-10482",
+    "probability_of_default": 0.9122961272830523,
+    "base_probability": 0.16735821099217124,
+    "raising": [
+      {
+        "code": "betting",
+        "text": "Spends 25% of outgoing money on betting",
+        "direction": "raises",
+        "contribution": 1.4721531516897621,
+        "impact_points": 20.758259319667793,
+        "strength": "major"
+      },
+      {
+        "code": "emergency_money",
+        "text": "Could not raise emergency money",
+        "direction": "raises",
+        "contribution": 0.614139792420647,
+        "impact_points": 6.315779636640261,
+        "strength": "major"
+      },
+      {
+        "code": "overdraft",
+        "text": "Relies on overdraft (Fuliza): 38 times in 6 months, 46% repaid",
+        "direction": "raises",
+        "contribution": 0.5534750047299918,
+        "impact_points": 5.554995999948053,
+        "strength": "major"
+      }
+    ],
+    "lowering": [
+      {
+        "code": "loan_amount",
+        "text": "Modest loan requested: KSh 5,000",
+        "direction": "lowers",
+        "contribution": -0.12247357899403424,
+        "impact_points": -0.9317223943065223,
+        "strength": "minor"
+      },
+      {
+        "code": "statement_provided",
+        "text": "Provided a 6-month M-Pesa statement",
+        "direction": "lowers",
+        "contribution": -0.11177851861537613,
+        "impact_points": -0.8541097146388843,
+        "strength": "minor"
+      }
+    ],
+    "other_factors": {
+      "contribution": -0.30560159780045903,
+      "impact_points": -2.15667974102699,
+      "material": false
+    }
+  },
+  "thin_file": {
+    "applicant_id": "A-00001",
+    "probability_of_default": 0.34002675542896865,
+    "base_probability": 0.16735821099217124,
+    "raising": [
+      {
+        "code": "saved_past_year",
+        "text": "Did not save in the past year",
+        "direction": "raises",
+        "contribution": 0.3862647699851043,
+        "impact_points": 8.069405839355293,
+        "strength": "major"
+      },
+      {
+        "code": "medical_borrowing",
+        "text": "Borrowed for medical costs in the past year",
+        "direction": "raises",
+        "contribution": 0.33522295576230837,
+        "impact_points": 7.077023425335726,
+        "strength": "major"
+      },
+      {
+        "code": "bill_worry",
+        "text": "Very worried about paying monthly bills",
+        "direction": "raises",
+        "contribution": 0.2513326180770673,
+        "impact_points": 5.39484276338909,
+        "strength": "major"
+      }
+    ],
+    "lowering": [
+      {
+        "code": "work_status",
+        "text": "In the workforce",
+        "direction": "lowers",
+        "contribution": -0.11466510355187817,
+        "impact_points": -2.6183440642079168,
+        "strength": "moderate"
+      },
+      {
+        "code": "emergency_money",
+        "text": "Would have to borrow in an emergency",
+        "direction": "lowers",
+        "contribution": -0.08948785342572486,
+        "impact_points": -2.035971823175803,
+        "strength": "moderate"
+      }
+    ],
+    "other_factors": {
+      "contribution": -0.08803564044916741,
+      "impact_points": -2.0025039345570983,
+      "material": false
+    }
+  },
+  "safe_applicant": {
+    "applicant_id": "A-04816",
+    "probability_of_default": 0.012830005197224461,
+    "base_probability": 0.16735821099217124,
+    "raising": [
+      {
+        "code": "income_level",
+        "text": "Low money coming in: about KSh 3,000 a month",
+        "direction": "raises",
+        "contribution": 0.16084485423888092,
+        "impact_points": 0.18853658671383697,
+        "strength": "minor"
+      },
+      {
+        "code": "income_group",
+        "text": "In the middle income group in their country",
+        "direction": "raises",
+        "contribution": 0.03076272127303933,
+        "impact_points": 0.03838393072519847,
+        "strength": "minor"
+      },
+      {
+        "code": "account_balance",
+        "text": "Usually keeps money in the account",
+        "direction": "lowers",
+        "contribution": -0.0020948869757441745,
+        "impact_points": -0.0026559669650974213,
+        "strength": "minor"
+      }
+    ],
+    "lowering": [
+      {
+        "code": "bill_worry",
+        "text": "Not worried about paying monthly bills",
+        "direction": "lowers",
+        "contribution": -0.3369061289294289,
+        "impact_points": -0.5047908493366334,
+        "strength": "minor"
+      },
+      {
+        "code": "betting",
+        "text": "No spending on betting",
+        "direction": "lowers",
+        "contribution": -0.32172168815560914,
+        "impact_points": -0.47832382905172965,
+        "strength": "minor"
+      }
+    ],
+    "other_factors": {
+      "contribution": -0.5676926840780374,
+      "impact_points": -0.9584816793148727,
+      "material": false
+    }
+  }
+}
