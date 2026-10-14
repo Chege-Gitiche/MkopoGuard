@@ -21,7 +21,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from mkopoguard.api import security
+from mkopoguard.api import openapi, security
 from mkopoguard.api.db import get_session
 from mkopoguard.api.hardening import client_ip, email_tag
 from mkopoguard.api.models import User
@@ -95,7 +95,7 @@ def require_roles(*roles: str):
     return check
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, summary="Log in", responses=openapi.LOGIN_ERRORS)
 def login(
     request: Request,
     form: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -131,7 +131,7 @@ def login(
     return Token(access_token=token, expires_in=settings.access_token_minutes * 60)
 
 
-@router.get("/me", response_model=UserOut)
+@router.get("/me", response_model=UserOut, summary="Who am I", responses=openapi.UNAUTHORIZED)
 def me(user: CurrentUser) -> User:
     """The logged-in user's own details."""
     return user

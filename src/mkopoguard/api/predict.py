@@ -16,13 +16,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel, ValidationError
 
+from mkopoguard.api import openapi
 from mkopoguard.api.auth import SessionDep, require_roles
 from mkopoguard.api.models import Prediction, User
 from mkopoguard.api.schemas import BANDS, ApplicantProfile, PredictionOut
 from mkopoguard.api.service import score
 from mkopoguard.api.statement import MAX_BYTES, StatementError, parse_statement
 
-router = APIRouter(tags=["predictions"])
+router = APIRouter()
 SCORERS = ("officer", "admin", "demo")
 Scorer = Annotated[User, Depends(require_roles(*SCORERS))]
 
@@ -60,12 +61,26 @@ def read_statement(upload: UploadFile | None) -> bytes | None:
     return data
 
 
-@router.post("/predict", response_model=PredictionOut, status_code=status.HTTP_200_OK)
+@router.post(
+    "/predict",
+    response_model=PredictionOut,
+    status_code=status.HTTP_200_OK,
+    tags=["predictions"],
+    summary="Score an applicant",
+    responses=openapi.UNAUTHORIZED | openapi.INVALID,
+)
 def predict(
     request: Request,
     user: Scorer,
     session: SessionDep,
-    profile: Annotated[str, Form(description="The applicant profile, as JSON text")],
+    profile: Annotated[
+        str,
+        Form(
+            description="The applicant profile, as JSON text",
+            examples=[openapi.EXAMPLE_PROFILE_JSON],
+            json_schema_extra={"example": openapi.EXAMPLE_PROFILE_JSON},  # prefills /docs
+        ),
+    ],
     statement: Annotated[
         UploadFile | None, File(description="M-Pesa statement CSV (optional)")
     ] = None,
@@ -118,7 +133,13 @@ class ModelInfo(BaseModel):
     notice: str
 
 
-@router.get("/model/info", response_model=ModelInfo, tags=["model"])
+@router.get(
+    "/model/info",
+    response_model=ModelInfo,
+    tags=["model"],
+    summary="About the model",
+    responses=openapi.UNAUTHORIZED,
+)
 def model_info(request: Request, user: Scorer) -> ModelInfo:
     """Which model is scoring, how good it was on the locked test set, and its decision rule."""
     bundle = request.app.state.bundle

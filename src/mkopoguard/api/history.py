@@ -18,6 +18,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
+from mkopoguard.api import openapi
 from mkopoguard.api.auth import CurrentUser, SessionDep
 from mkopoguard.api.models import Prediction
 from mkopoguard.api.schemas import ReasonsOut
@@ -84,7 +85,12 @@ def kenyan_day_starts(day: date) -> datetime:
     return datetime.combine(day, time.min, tzinfo=KENYA)
 
 
-@router.get("", response_model=HistoryPage)
+@router.get(
+    "",
+    response_model=HistoryPage,
+    summary="Your prediction history",
+    responses=openapi.UNAUTHORIZED | openapi.INVALID,
+)
 def list_predictions(
     user: CurrentUser,
     session: SessionDep,
@@ -137,7 +143,12 @@ def list_predictions(
     )
 
 
-@router.get("/{prediction_id}", response_model=PredictionDetail)
+@router.get(
+    "/{prediction_id}",
+    response_model=PredictionDetail,
+    summary="One past prediction",
+    responses=openapi.UNAUTHORIZED | openapi.NOT_FOUND | openapi.INVALID,
+)
 def get_prediction(prediction_id: int, user: CurrentUser, session: SessionDep) -> PredictionDetail:
     """One of your past predictions. Anyone else's is "not found", exactly like a missing one."""
     row = session.scalar(

@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from mkopoguard import config
-from mkopoguard.api import auth, hardening, history, predict
+from mkopoguard.api import auth, hardening, history, openapi, predict
 from mkopoguard.api.db import check_schema, database_ok, make_engine, make_sessions
 from mkopoguard.api.settings import Settings, get_settings
 from mkopoguard.bundle import load_bundle
@@ -64,8 +64,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="MkopoGuard API",
         version=config.MODEL_VERSION,
-        description="Microloan default risk scoring for loan officers. Synthetic data only: "
-        "not for real lending decisions.",
+        description=openapi.DESCRIPTION,
+        openapi_tags=openapi.TAGS,
+        swagger_ui_parameters={"tryItOutEnabled": True, "displayRequestDuration": True},
         lifespan=lifespan,
     )
     app.state.settings = settings
@@ -77,7 +78,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     hardening.install(app)  # request ids, no stack traces in responses, security headers
 
-    @app.get("/health", response_model=Health, tags=["system"])
+    @app.get("/health", response_model=Health, tags=["system"], summary="Health check")
     def health(request: Request) -> Health:
         """Uptime check: the app is running and has a valid model loaded."""
         bundle = request.app.state.bundle
