@@ -401,3 +401,49 @@ per applicant.
 
 **Most frequent reasons:** saved in the past year (88% of applicants), bill worry (78%),
 betting (51%), loan amount (50%).
+
+## Step 4.3: Behaviour (directional) tests
+
+**Question.** If one thing about an applicant changes and everything else stays equal, does the
+model's risk move the way the simulator says it should?
+
+**Method.** `src/mkopoguard/explain/behaviour.py` defines 30 checks with an expected direction
+taken from `data/defaults.py` (26 single-input, 4 linked: inputs computed together, e.g.
+loan and loan-to-inflow). A check passes only if risk moves the wrong way for **no** applicant
+and moves the right way on average (the model must respond). 11 more inputs with no expected
+direction (non-drivers, and the two income-timing drivers where seasonal and irregular earners
+are both riskier) are measured only. Run on the 15,910 development applicants; the test set
+stays closed. In CI the same checks run on the bundle's golden examples.
+
+**Result: 27 of 30 pass.**
+- Every survey answer, the loan size, the income group, betting, owing more on overdraft,
+  repaying less, missed bills, balances, volatility and the guide's check ("average inflow up
+  must not raise risk") move risk the expected way for every applicant.
+- Linked checks pass: a bigger loan raises risk, a real income rise lowers it (100%), and
+  starting to use an overdraft raises it (+5.7 points on average, 100%).
+
+**Known flips (marked as expected failures in the tests, strict):**
+
+| Check | Wrong way for | Effect | Decisions eased |
+|---|---|---|---|
+| 10 more overdraft borrowings, same debt | 99% | -0.84 pts | 2.2% of applicants |
+| 10 more borrowings and +0.1 months owed | 95% of users | -0.43 pts | 0.7% |
+| Median inflow x 1.5 alone | 93% | +0.27 pts | 0.7% |
+
+**Investigation.** In the simulator, only overdraft users with room under their limit can keep
+borrowing, and repaying is what frees that room. So among users, the raw borrowing count is
+slightly linked with **lower** true risk (Spearman -0.12), and a linear fit to the true default
+probability also gives it a negative weight. The model reflects the data; the count just doesn't
+measure dependence. Median inflow is a correlated twin of average inflow and only flips when
+moved on its own.
+
+**Decision.** Keep v1.0.0 unchanged: retraining after the test set was opened would compromise
+the final test. Record the flips in the model card (step 4.5) as limitations, since a model that
+rewards borrowing more often could be gamed. Revisit in v2.0.0 (Phase 9): replace the raw count
+with a "uses overdraft" flag, or constrain those features to push risk in one direction only.
+The strict expected-failure tests flag any model that fixes a flip.
+
+**Non-drivers (measured only):** airtime +5 pts gives -1.0 pt, borrowed from a financial
+institution gives -1.4 pts, a 6-month vs 1-month term gives +1.3 pts, the rest under 1 pt.
+
+Outputs: `docs/results/behaviour_tests.csv`, `docs/img/explain_03_behaviour.png`.

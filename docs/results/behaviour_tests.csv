@@ -1,0 +1,42 @@
+check,description,kind,expect,who,n,mean_change_pts,min_change_pts,max_change_pts,share_up,share_down,share_wrong,worst_wrong_pts,responds,share_decisions_wrong,passed,note
+more_betting,Betting share of spending +5 points,single,higher,statement,8372,4.4717,0.0,8.9254,0.99,0.0,0.0,0.0,True,0.0,True,
+more_overdraft_borrowing,"10 more overdraft borrowings, same amount owed",single,higher,statement,8372,-0.843,-1.8238,0.0,0.0,0.9898,0.9898,1.8238,False,0.0222,False,known flip
+owes_more_overdraft,Overdraft owed +0.25 months of income,single,higher,statement,8372,1.3583,0.0,2.8955,0.99,0.0,0.0,0.0,True,0.0,True,
+repays_less_overdraft,Repays 20 points less of what was borrowed on overdraft,single,higher,overdraft_users,1912,1.7951,0.0,3.9345,0.7971,0.0,0.0,0.0,True,0.0,True,
+more_low_balance_days,10 points more of days with a near-empty balance,single,higher,statement,8372,0.6791,0.0,1.4422,0.99,0.0,0.0,0.0,True,0.0,True,
+higher_end_balance,Month-end balance +0.5 months of income,single,lower,statement,8372,-0.0275,-0.059,0.0,0.0,0.99,0.0,0.0,True,0.0,True,
+misses_a_bill,Pays bills in one month fewer,single,higher,statement,8372,0.2368,0.0,1.6559,0.3485,0.0,0.0,0.0,True,0.0,True,
+higher_average_inflow,Average monthly inflow x 1.5,single,lower,statement,8372,-0.6494,-1.4245,0.0,0.0,0.9881,0.0,0.0,True,0.0,True,
+higher_median_inflow,Median monthly inflow x 1.5,single,lower,statement,8372,0.2737,0.0,0.6161,0.928,0.0,0.928,0.6161,False,0.0072,False,known flip
+higher_loan_to_inflow,Loan-to-inflow ratio x 1.5,single,higher,statement,8372,1.3863,0.0,5.3651,0.9898,0.0,0.0,0.0,True,0.0,True,
+more_volatile_income,Income volatility +0.2,single,higher,statement,8372,0.7782,0.0,1.7092,0.99,0.0,0.0,0.0,True,0.0,True,
+bigger_loan,Loan amount x 1.5,single,higher,everyone,15910,0.9291,0.0,1.6508,0.9881,0.0,0.0,0.0,True,0.0,True,
+higher_income_group,One income quintile higher,single,lower,everyone,15910,-1.1878,-2.8108,0.0,0.0,0.7199,0.0,0.0,True,0.0,True,
+in_work,In the workforce vs not,single,lower,everyone,15910,-5.9929,-10.1207,-0.6306,0.0,1.0,0.0,0.0,True,0.0,True,
+saved,Saved in the past year vs not,single,lower,everyone,15910,-9.3666,-15.947,-1.1304,0.0,1.0,0.0,0.0,True,0.0,True,
+savings_group,Saves in a savings group vs not,single,lower,everyone,15910,-2.9619,-5.3632,-0.3024,0.0,1.0,0.0,0.0,True,0.0,True,
+medical_borrowing,Borrowed for medical bills vs not,single,higher,everyone,15910,6.3822,0.6661,10.5837,1.0,0.0,0.0,0.0,True,0.0,True,
+no_emergency_money_vs_savings,Could not find emergency money vs would use savings,single,higher,everyone,15910,10.7775,1.2179,16.4913,1.0,0.0,0.0,0.0,True,0.0,True,
+no_emergency_money_vs_work,Could not find emergency money vs would use work,single,higher,everyone,15910,11.5388,1.2888,17.8469,1.0,0.0,0.0,0.0,True,0.0,True,
+no_emergency_money_vs_family_friends,Could not find emergency money vs would use family friends,single,higher,everyone,15910,11.1838,1.2559,17.2106,1.0,0.0,0.0,0.0,True,0.0,True,
+no_emergency_money_vs_borrowing,Could not find emergency money vs would use borrowing,single,higher,everyone,15910,11.2964,1.2664,17.4115,1.0,0.0,0.0,0.0,True,0.0,True,
+no_emergency_money_vs_selling_assets,Could not find emergency money vs would use selling assets,single,higher,everyone,15910,9.7726,1.1216,14.7516,1.0,0.0,0.0,0.0,True,0.0,True,
+no_emergency_money_vs_other,Could not find emergency money vs would use other,single,higher,everyone,15910,10.3167,1.1741,15.6868,1.0,0.0,0.0,0.0,True,0.0,True,
+very_worried_vs_not,Very worried about bills vs not at all,single,higher,everyone,15910,8.151,1.0039,14.6009,1.0,0.0,0.0,0.0,True,0.0,True,
+very_worried_vs_somewhat,Very worried about bills vs somewhat,single,higher,everyone,15910,6.8149,0.8567,11.8965,1.0,0.0,0.0,0.0,True,0.0,True,
+young,Aged 22 vs 35 (18-24 year olds are riskier),single,higher,everyone,15910,0.0843,0.0076,0.1486,1.0,0.0,0.0,0.0,True,0.0,True,
+bigger_loan_linked,"Loan x 1.5, and so loan-to-inflow x 1.5",linked,higher,statement,8372,2.2046,0.061,7.0018,1.0,0.0,0.0,0.0,True,0.0,True,
+higher_income_linked,"Average and median inflow x 1.5, and so loan-to-inflow / 1.5",linked,lower,statement,8372,-1.3497,-6.2002,-0.0282,0.0,1.0,0.0,0.0,True,0.0,True,
+starts_using_overdraft,A non-user gets a typical overdraft user's statement,linked,higher,overdraft_non_users,6460,5.727,0.7063,11.988,1.0,0.0,0.0,0.0,True,0.0,True,
+borrows_and_owes_more,10 more overdraft borrowings and +0.1 months of income owed,linked,higher,overdraft_users,1912,-0.4311,-1.8237,1.1534,0.0497,0.9487,0.9487,1.8237,False,0.0068,False,known flip
+more_income_payments,2 more income payments a month (no expected direction),report,none,statement,8372,0.3287,0.0,0.7333,0.9867,0.0,,,,,,measured only
+longer_since_income,Last income 10 days earlier (no expected direction),report,none,statement,8372,-0.3417,-0.7322,0.0,0.0,0.99,,,,,,measured only
+more_airtime,Airtime share +5 points (non-driver),report,none,statement,8372,-0.9938,-2.1683,0.0,0.0,0.99,,,,,,measured only
+more_cash_out,Cash-out share +5 points (non-driver),report,none,statement,8372,0.0393,0.0,0.0852,0.9896,0.0,,,,,,measured only
+more_p2p_in,Money from family and friends +5 points (non-driver),report,none,statement,8372,0.787,0.0,1.6804,0.99,0.0,,,,,,measured only
+more_transactions,10 more transactions a month (non-driver),report,none,statement,8372,0.187,0.0,0.399,0.99,0.0,,,,,,measured only
+longer_term,6-month vs 1-month loan (non-driver),report,none,everyone,15910,1.33,0.1194,2.335,1.0,0.0,,,,,,measured only
+tertiary_education,Tertiary vs primary education (non-driver),report,none,everyone,15910,0.7789,0.0677,1.3837,1.0,0.0,,,,,,measured only
+past_year,Borrowed past year: yes vs no (non-driver),report,none,everyone,15910,-0.3138,-0.5536,-0.0277,0.0,1.0,,,,,,measured only
+from_fin_institution,Borrowed from fin institution: yes vs no (non-driver),report,none,everyone,15910,-1.4075,-2.5364,-0.1224,0.0,1.0,,,,,,measured only
+from_family_friends,Borrowed from family friends: yes vs no (non-driver),report,none,everyone,15910,-0.2939,-0.5194,-0.0261,0.0,1.0,,,,,,measured only
