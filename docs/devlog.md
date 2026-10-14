@@ -690,3 +690,258 @@ Used ISO country codes instead of names because "Côte d'Ivoire" gets mangled
 - **Rejected along the way:** random forest, LightGBM and XGBoost (they overfit, and tuning just turned XGBoost into an additive model), class weights and SMOTE (no ranking gain, broken probabilities), country as an input, tuned settings (gains within noise), more data (the curve has flattened), recalibration (the probabilities were already honest), and a single cut-off (the per-term rule earns 19% more).
 - **Test set (opened once):** PR-AUC 0.399 (0.360-0.443), ROC-AUC 0.717, ECE 0.015, +KSh 0.87M per 1,000 applicants compared with approving everyone.
 - **Tests:** 412 locally; CI 383 passed, 29 skipped.
+
+## 2026-10-14 · Step 4.1 — Global explanations (SHAP)
+
+**Goal:** see which inputs the champion relies on, and check that against what the simulator actually uses.
+
+**Did:**
+- Wrote `explain/linear_shap.py`: exact SHAP for a logistic regression (contribution = coefficient × (value − average), added up per input). It matches `shap.LinearExplainer` exactly, and the API can use it without the shap library.
+- Wrote `explain/design.py`: the list of true drivers from the simulator, and a known-answer check.
+- Result: the top 10 inputs (excluding `has_statement`) are all true drivers, and inputs the simulator never uses carry 8.0% of the importance (limit 15%).
+- Chart: `explain_01_global.png`.
+
+**Broke / learned:**
+- `shap.LinearExplainer` only matches the exact formula when its background (masker) uses every sample (`max_samples` = number of rows).
+- The chart legend showed the wrong colours until I built it from explicit Patch handles.
+- `has_statement` carries the whole thin-file vs statement-holder difference, so it has to be read together with the statement features.
+- Three non-drivers (airtime, cash-out, education) get counter-intuitive signs once the drivers are in the model.
+
+**Decisions:** use my own exact explainer at runtime, not the shap library, so explanations are instant and need no extra dependency.
+
+## 2026-10-14 · Step 4.2 — Per-prediction reason codes
+
+**Goal:** every score comes with the 3 reasons that raise the risk most and the 2 that lower it most, in plain English.
+
+**Did:**
+- Wrote `explain/reasons.py`. Inputs that describe one thing are explained together as "units" (the three overdraft features are one reason).
+- A thin-file applicant gets one "no statement" reason and never any statement details.
+- Statement holders are compared with the typical statement holder.
+- Inputs the simulator never uses are added up as "other factors", flagged when they are as large as a stated reason.
+- Each reason has a strength (major / moderate / minor) and its size in percentage points.
+- Checked on all 15,910 development applicants: no broken promises. 0.7% of "raising" slots hold a factor that actually lowers risk (when fewer than 3 factors raise it), and other factors are material for 19.2%.
+
+**Broke / learned:**
+- "Provided a statement" came out as a reason for 50% of holders. Re-centring holders on the typical holder (`statement_shift`) brought it down to 1%.
+- "Somewhat worried" read wrongly as a lowering reason, so it was reworded to "Only somewhat worried…".
+- The other-factors flag fired too often until I also required at least 1 percentage point.
+
+**Decisions:** only true drivers can be stated as reasons. A reason a loan officer can't make sense of is worse than none.
+
+## 2026-10-14 · Step 4.3 — Behaviour tests
+
+**Goal:** directional "all else equal" tests: more risk factors must never lower the risk, and more resilience must never raise it.
+
+**Did:**
+- Wrote `explain/behaviour.py` with 30 checks, each taking its expected direction from the simulator. 26 change one input; 4 change inputs that are computed together (loan and loan-to-inflow, income and loan-to-inflow, starting an overdraft).
+- 11 more inputs with no expected direction are measured but not tested.
+- Result: **27 of 30 pass for every applicant**, including the guide's own examples (average inflow up never raises risk; starting an overdraft always raises it).
+- Wrote `scripts/behaviour_tests.py` and the chart `explain_03_behaviour.png`.
+
+**Broke / learned:** three checks fail:
+- 10 more overdraft borrowings with the same debt lowers risk for 99% of applicants (and turns 2.2% of declines into approvals).
+- The same with slightly more debt still lowers it for 95% of overdraft users.
+- Raising only the median inflow raises risk slightly.
+
+Investigating showed that in the simulator itself, more borrowings among overdraft users go with *lower* true risk (Spearman −0.12): only users with room under their limit can keep borrowing. A linear fit to the true risk also gives the count a negative weight. So a model can be faithful to the data and still be hard to defend.
+
+**Decisions:**
+- Keep v1.0.0; retraining after opening the test set would compromise it.
+- The three flips are strict expected failures in the tests, so a model that fixes one is flagged.
+- They are documented in the model card and will be fixed in v2.0.0 (e.g. a "uses overdraft" flag instead of the raw count).
+
+## 2026-10-14 · Step 4.4 — Fairness check
+
+**Goal:** compare approval rate, recall and false positive rate across gender, age group and country, and write the findings down honestly.
+
+**Did:**
+- Wrote `fairness.py` and `scripts/fairness_check.py`, using out-of-fold predictions on the 15,910 development applicants (the test set stays closed).
+- Added an "oracle" (the same decision rule applied to the true risk) to separate real risk differences from gaps the model adds.
+- Intervals are bootstrapped and Bonferroni-widened.
+- Results:
+  - Women are approved 44.0% vs men 53.5% (ratio 0.82). 9.0 points more of their good borrowers are declined, 4.1 of them added by the model.
+  - Over-50s have a ratio of 0.74, below four-fifths.
+  - At the same true risk, women are declined 6.9 points more often and over-50s 9.1 points more.
+  - Calibration is fine in every group.
+  - 18–24s are slightly favoured.
+  - 9 of 19 countries fall below four-fifths of Gabon (the oracle puts 4 below too); Kenya is at parity.
+
+**Broke / learned:**
+- Equal calibration with unequal base rates forces unequal error rates (Kleinberg et al.; Chouldechova).
+- The gap comes from the model leaning on visible inputs (work, savings, statement access) where women and older applicants look worse.
+- I first described the flag rules as "fixed before looking at the results". That wasn't true, so I corrected the wording.
+- Tiny bootstrap samples divided by zero, so a guard now returns NaN for that resample.
+
+**Decisions:**
+- No separate thresholds by gender or age group: that would be direct discrimination (Kenya Constitution Art. 27).
+- Mitigations: human review of declines near the threshold, statements for more applicants, and this audit re-run for every new model.
+- Sources: 29 CFR 1607.4(D) (the four-fifths rule), Constitution of Kenya Art. 27(4), Data Protection Act 2019.
+
+## 2026-10-14 · Step 4.5 — Model card and bundle v1.1.0
+
+**Goal:** a complete, honest `docs/model_card.md`, and a bundle the API can explain from.
+
+**Did:**
+- `model_card.py` now builds the whole card from saved results (test report, ablation, explanations, behaviour, fairness). No number is typed by hand.
+- The card opens with "Not for real lending decisions", and an unexplained behaviour failure would appear in bold.
+- `package_model.py` writes the same text to `docs/` and into the bundle.
+- Bundle v1.1.0: same model, plus `explainer_background.json`, so `load_bundle().reasoner()` gives the 3 + 2 reasons with no training data.
+- Checked: reasons from the bundle equal reasons built from all development data on 500 applicants, and a background from another model is refused.
+
+**Broke / learned:** a hand-written card goes stale the moment a number changes. Generating it, and testing that every flag and flip appears in it, keeps it honest.
+
+**Decisions:** bump to 1.1.0 rather than 2.0.0, because the model itself is unchanged.
+
+## 2026-10-14 · Step 5.1 — FastAPI app
+
+**Goal:** the API skeleton: `/health`, the frontend served from the same address, and settings from the environment.
+
+**Did:**
+- `create_app()` loads the bundle once at startup and refuses to start if it is corrupted.
+- `/health` is public and reveals nothing secret.
+- `frontend/` is served at `/`, so no CORS is needed, and API routes always win over files.
+- Settings come from `MKOPOGUARD_*` variables or a git-ignored `.env`. The secret key is a `SecretStr` (32+ characters, not the placeholder), and production can't use SQLite.
+
+**Broke / learned:** using an app factory (`--factory`) means tests can build the app with their own settings and never read my real `.env`.
+
+**Decisions:** the API lives in `src/mkopoguard/api/` (inside the package) instead of a top-level `api/` folder.
+
+## 2026-10-14 · Step 5.2 — Database models and migrations
+
+**Goal:** `users` and `predictions` tables, created by Alembic.
+
+**Did:**
+- SQLAlchemy models with rules the database itself enforces:
+  - unique lowercase emails
+  - roles limited to known values
+  - probability between 0 and 1
+  - decision approve / decline
+  - an officer with history can't be deleted
+- Every prediction stores its `model_version`, and an index serves "my history, newest first".
+- Migration `0001`. The app refuses to start on a database that hasn't been migrated, and a test checks the models and the migrations agree.
+
+**Broke / learned:** SQLite ignores foreign keys unless `PRAGMA foreign_keys=ON` is set on every connection.
+
+**Decisions:**
+- `applicant_ref` is the lender's own reference: names, phone numbers and ID numbers are never stored (data minimisation).
+- The database URL comes from the settings, never from `alembic.ini`.
+
+## 2026-10-14 · Step 5.3 — Authentication
+
+**Goal:** hashed passwords, short-lived tokens, and a guard on every officer route.
+
+**Did:**
+- bcrypt hashing, and a policy of at least 12 characters, at most 72 bytes, not common, not the email.
+- 30-minute JWTs with a fixed algorithm, issuer and audience.
+- `/auth/login`, `/auth/me` and `get_current_user`. Deactivating an account ends its session at once.
+- Every failed login gets the same message, and an unknown email is still checked against a dummy hash, so response time doesn't reveal which emails have accounts.
+- A `demo` role (migration `0002`) and `scripts/create_user.py`.
+- Timestamps are always returned in UTC.
+
+**Broke / learned:**
+- passlib is unmaintained and breaks with bcrypt 4.1+, so I use bcrypt directly.
+- bcrypt 5 refuses passwords over 72 bytes, so the policy caps them there.
+- Migration `0002` failed once predictions existed: SQLite rebuilds the table to change a constraint, and foreign keys block that. The fix is to turn keys off for the migration only, then prove nothing broke with `PRAGMA foreign_key_check`. A regression test now runs the migrations on a database with history.
+- `getpass` doesn't work well in Git Bash, so passwords are read with `read -rsp`.
+
+**Decisions:** no public sign-up; accounts are created by a script, as a bank would.
+
+## 2026-10-14 · Step 5.4 — Request and response schemas
+
+**Goal:** strict validation, so bad input is a clear 422 and never a 500.
+
+**Did:**
+- `ApplicantProfile`:
+  - every field must be present (`null` = not answered)
+  - no type guessing and no unknown fields
+  - ranges and categories checked against the bundle
+  - contradicting answers refused
+  - `applicant_ref` can't be a phone number, ID number or name
+  - `application_date` is part of the profile
+- Statement CSV checks: size, encoding, exact columns, every value with its row number, the balance adding up from row to row, and the 6-month window.
+- Risk bands added (low / medium / high / very high).
+- `build_inputs()` reuses the Phase 2 feature code.
+- Checked: 800 development statements uploaded as CSVs give exactly the training score (largest difference 0.0).
+- 10 demo samples, with a manifest of expected scores.
+
+**Broke / learned:**
+- Pydantic's regex engine doesn't support lookahead, so the "needs a letter" rule moved into a validator.
+- The band is not the decision: a "medium" 1-month loan can be declined and a "high" 6-month loan approved.
+
+**Decisions:** the application date is part of the profile, so the statement window matches training exactly and the demo can use historical samples.
+
+## 2026-10-14 · Step 5.5 — Prediction service
+
+**Goal:** `POST /predict`: check → features → score → reasons → save → respond.
+
+**Did:**
+- `/predict` takes a multipart form (profile as JSON plus an optional CSV).
+- The explanation is checked against the model on every request.
+- Officers' predictions are saved with `model_version`. Saved inputs are the profile and the statement's features, never the raw transactions.
+- The demo account gets the full result but nothing is saved.
+- Uploads are read only up to 1 MB.
+- Added `/model/info`.
+- About 0.16 s per prediction. All 10 samples score through the API exactly as recorded.
+
+**Broke / learned:**
+- A test read a relationship after its session closed (DetachedInstanceError), so it now loads the officer eagerly.
+- One thin-file sample's top 5 reasons didn't include "no statement", so the test now checks the rule that matters: a thin-file applicant never gets statement reasons.
+- My running test totals drifted from my real count, so I use the measured number now.
+
+**Decisions:** keep the explainer in memory from startup, rebuilt from the bundle's saved background.
+
+## 2026-10-14 · Step 5.6 — History endpoints
+
+**Goal:** each officer sees only their own predictions; officer A gets a 404 on officer B's.
+
+**Did:**
+- `GET /predictions` (newest first, `?page=&size=`, filters by band, decision, reference prefix and Kenyan calendar days) and `GET /predictions/{id}`.
+- Ownership is enforced in the database query itself, and someone else's prediction looks exactly like a missing one.
+- Migration `0003` keeps the threshold each decision was made against.
+
+**Broke / learned:**
+- My test data broke the database's own probability check, which proved the constraint works.
+- The 5.3 migration test wrote "0001-era" rows with today's model. It now uses plain SQL, as the rows would have looked then.
+- Day filters have to convert Kenyan midnight to UTC.
+
+**Decisions:** 404, not 403, for other officers' records, and admins see only their own history through the API too.
+
+## 2026-10-14 · Step 5.7 — Basic hardening
+
+**Goal:** slow password guessing, and keep secrets and stack traces out of responses and logs.
+
+**Did:**
+- Login rate limit:
+  - 5 failures per IP + email in 15 minutes
+  - 20 attempts per IP in 5 minutes
+  - 429 with `Retry-After`, the same answer whether or not the account exists
+  - memory stays bounded
+- Unexpected errors become a plain 500 with a reference; the full traceback is logged under the same reference.
+- 422s never echo what was sent.
+- Every request gets an id that appears in every log line. Failed logins are logged with a one-way tag instead of the email, and a filter masks anything that looks like a token or password.
+- Security headers on every response, and `no-store` on responses with personal data.
+- Checked on a real server: 401 five times, then 429.
+
+**Broke / learned:**
+- Counting failures per IP + email (not per account) means an attacker can't lock a real officer out.
+- FastAPI's default 422s include the submitted values, so a password could be echoed back.
+
+**Decisions:** keep the counts in memory (right for one server process).
+
+## 2026-10-14 · Step 5.8 — API docs
+
+**Goal:** every endpoint works from `/docs`, and the docs explain themselves.
+
+**Did:**
+- Front-page description with a three-step guide, described groups, a summary for every endpoint, and documented error answers with examples.
+- `/predict` is pre-filled with a valid sample (tested), so "Try it out" works at once.
+- Checked in a real browser: Authorize → Execute → 200, 19.2%, decline.
+- Wrote `docs/api_checklist.md` (22 manual cases) and `scripts/api_smoke.py`: 20 of 20 against a live server. It also runs in CI for both an officer and the demo account.
+
+**Broke / learned:**
+- `/model/info` showed under two groups because the router and the route both set a tag.
+- Tests now require every endpoint to document its 401, 422 and 404 responses, so an undocumented endpoint fails CI.
+
+**Decisions:** keep the smoke script independent of the test client, so the same checks run against the live URL in Phase 8.
+
+**Next:** Phase 6, the loan-officer frontend: six screens in HTML, CSS and plain JavaScript, served by the same app, aiming for an accessibility score of 90 or more.
