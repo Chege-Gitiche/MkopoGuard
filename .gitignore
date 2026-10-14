@@ -3,8 +3,7 @@ data/raw/
 data/interim/
 data/processed/
 mlruns/
-
-# The model bundle IS committed (step 3.13)
 !models/
 !models/champion/
 !models/champion/**
+.env

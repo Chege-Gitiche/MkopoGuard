@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MkopoGuard</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem;
+           color: #0b0b0b; background: #fcfcfb; line-height: 1.5; }
+    .status { padding: 0.75rem 1rem; border-radius: 0.5rem; background: #eef4fb; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>MkopoGuard</h1>
+    <p>Microloan default risk scoring for loan officers. The full app arrives in Phase 6.</p>
+    <p class="status" id="status" role="status" aria-live="polite">Checking the server…</p>
+    <p><a href="/docs">API documentation</a></p>
+    <p><small>Synthetic data only: not for real lending decisions.</small></p>
+  </main>
+  <script>
+    fetch("/health")
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((h) => {
+        document.getElementById("status").textContent =
+          `Server is up: model ${h.model_name} v${h.model_version}.`;
+      })
+      .catch(() => {
+        document.getElementById("status").textContent = "The server isn't responding yet.";
+      });
+  </script>
+</body>
+</html>
