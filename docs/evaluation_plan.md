@@ -447,3 +447,57 @@ The strict expected-failure tests flag any model that fixes a flip.
 institution gives -1.4 pts, a 6-month vs 1-month term gives +1.3 pts, the rest under 1 pt.
 
 Outputs: `docs/results/behaviour_tests.csv`, `docs/img/explain_03_behaviour.png`.
+
+## Step 4.4: Fairness check
+
+**Question.** Does the model treat applicants differently by gender, age group or country?
+None of these are model inputs: `is_female` and `country_code` are kept only for this audit,
+and age is an input only as a number.
+
+**Method.** `src/mkopoguard/fairness.py`, run by `scripts/fairness_check.py`. Out-of-fold
+predictions for the 15,910 development applicants (each scored by a copy of the champion that
+never saw them; decisions agree with the shipped model for 98.3%); the test set stays closed.
+Decisions use the step 3.11 cost rule. Per group: approval rate, recall (defaulters declined)
+and false positive rate (good borrowers declined, the error that harms applicants). Each group
+is compared with the most-approved group. Because the data is synthetic, an **oracle** (the
+same rule applied to the true default probability) shows how much of each gap real risk
+differences justify; the **excess** is what the model adds. Bootstrap intervals (1,000
+resamples), Bonferroni-widened for the number of groups.
+
+**Flags.** Approval ratio < 0.80 (four-fifths rule, 29 CFR 1607.4(D): a US benchmark and only
+evidence of adverse impact); FPR gap > 5 points with its interval above zero; model adds a gap
+(excess interval above zero). Legal context: Constitution of Kenya Art. 27(4)-(5) (no direct
+or indirect discrimination on grounds including sex and age); Data Protection Act 2019
+(sex is sensitive personal data).
+
+**Results.**
+
+| Group | Approval model (oracle) | Ratio | FPR gap | Excess FPR gap |
+|---|---|---|---|---|
+| Men (ref) | 53.5% (62.1%) | 1.00 | - | - |
+| Women | 44.0% (55.4%) | 0.82 (0.80-0.85) | +9.0 pts (7.2-10.8) | +4.1 pts (2.4-5.7) |
+| 25-34 (ref) | 52.5% (63.5%) | 1.00 | - | - |
+| 50+ | 38.7% (52.2%) | **0.74** | +14.0 pts | +4.2 pts (0.9-7.6) |
+| 18-24 | 47.7% (55.1%) | 0.91 | +4.9 pts | -2.0 pts (favoured) |
+
+- Calibration holds in every group (mean predicted vs true: women 21.0% vs 21.2%, 50+ 22.9%
+  vs 22.8%); no group is flagged. Equal calibration with unequal base rates implies unequal
+  error rates (Kleinberg et al. 2016; Chouldechova 2017).
+- At the same true risk, women are declined 6.9 points more often and over-50s 9.1 points
+  more. The model can't see the hidden habits that drive default and relies on visible inputs
+  (work, savings, statement access) where these groups look worse. The gender excess appears
+  among statement holders (+2.2 pts FPR) and thin-file applicants (+3.1 pts), so missing
+  statements are not the only cause.
+- 18-24s are under-predicted (20.0% vs a true 21.6%): the age 18-24 risk step was barely
+  learned (step 4.1).
+- Countries: 9 of 19 fall below 4/5 of Gabon (the oracle puts 4 below too); the model adds a
+  clear gap for Benin, Congo, Liberia, Lesotho and Zambia. Kenya: ratio 1.00, no gap.
+
+**Decision.** Keep v1.0.0. No group-specific thresholds (that would decide on gender or age
+group: direct discrimination). Report these findings in the model card (step 4.5) as
+limitations, with these mitigations: human review of declines near the threshold, statements
+for more applicants, and re-running this audit for every new model
+(`tests/data/test_fairness_real.py` fails if the recorded findings change). Revisit in v2.0.0.
+
+Outputs: `docs/results/fairness_by_group.csv`, `fairness_same_risk.csv`,
+`fairness_summary.json`, `docs/img/fairness_01_approval.png`.

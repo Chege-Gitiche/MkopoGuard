@@ -1,0 +1,73 @@
+{
+  "predictions": "out-of-fold, 15,910 development applicants (test set not used)",
+  "decision_agreement_with_shipped_model": 0.9833,
+  "rules": {
+    "four_fifths": 0.8,
+    "max_fpr_gap": 0.05,
+    "interval": "bootstrap, Bonferroni-widened for the number of groups"
+  },
+  "flags": {
+    "gender": {
+      "adverse_impact": [],
+      "fpr_flag": [
+        "female"
+      ],
+      "model_adds_gap": [
+        "female"
+      ],
+      "calibration_flagged": []
+    },
+    "age_group": {
+      "adverse_impact": [
+        "50+"
+      ],
+      "fpr_flag": [
+        "50+"
+      ],
+      "model_adds_gap": [
+        "50+"
+      ],
+      "calibration_flagged": []
+    },
+    "country": {
+      "adverse_impact": [
+        "BWA",
+        "COG",
+        "LBR",
+        "LSO",
+        "MOZ",
+        "NAM",
+        "SWZ",
+        "ZMB",
+        "ZWE"
+      ],
+      "fpr_flag": [
+        "BEN",
+        "BWA",
+        "CMR",
+        "COG",
+        "LBR",
+        "LSO",
+        "MOZ",
+        "NAM",
+        "SWZ",
+        "ZMB",
+        "ZWE"
+      ],
+      "model_adds_gap": [
+        "BEN",
+        "COG",
+        "LBR",
+        "LSO",
+        "ZMB"
+      ],
+      "calibration_flagged": []
+    }
+  },
+  "same_risk_average_decline_gap": {
+    "gender: female_gap": 0.0694,
+    "age_group: 18-24_gap": 0.009,
+    "age_group: 35-49_gap": 0.016,
+    "age_group: 50+_gap": 0.0914
+  }
+}
