@@ -1,0 +1,92 @@
+[
+  {
+    "name": "sample_01_low",
+    "profile": "profiles/sample_01_low.json",
+    "statement": "statements/sample_01_low.csv",
+    "probability_of_default": 0.07533875107076694,
+    "band": "low",
+    "decision": "approve",
+    "model_version": "1.1.0"
+  },
+  {
+    "name": "sample_02_low",
+    "profile": "profiles/sample_02_low.json",
+    "statement": "statements/sample_02_low.csv",
+    "probability_of_default": 0.035507570899747105,
+    "band": "low",
+    "decision": "approve",
+    "model_version": "1.1.0"
+  },
+  {
+    "name": "sample_03_medium",
+    "profile": "profiles/sample_03_medium.json",
+    "statement": "statements/sample_03_medium.csv",
+    "probability_of_default": 0.10645189080514653,
+    "band": "medium",
+    "decision": "decline",
+    "model_version": "1.1.0"
+  },
+  {
+    "name": "sample_04_medium",
+    "profile": "profiles/sample_04_medium.json",
+    "statement": "statements/sample_04_medium.csv",
+    "probability_of_default": 0.12485690811749937,
+    "band": "medium",
+    "decision": "decline",
+    "model_version": "1.1.0"
+  },
+  {
+    "name": "sample_05_high",
+    "profile": "profiles/sample_05_high.json",
+    "statement": "statements/sample_05_high.csv",
+    "probability_of_default": 0.2497003163895361,
+    "band": "high",
+    "decision": "approve",
+    "model_version": "1.1.0"
+  },
+  {
+    "name": "sample_06_high",
+    "profile": "profiles/sample_06_high.json",
+    "statement": "statements/sample_06_high.csv",
+    "probability_of_default": 0.2591633590408081,
+    "band": "high",
+    "decision": "approve",
+    "model_version": "1.1.0"
+  },
+  {
+    "name": "sample_07_very_high",
+    "profile": "profiles/sample_07_very_high.json",
+    "statement": "statements/sample_07_very_high.csv",
+    "probability_of_default": 0.49081186351254213,
+    "band": "very_high",
+    "decision": "decline",
+    "model_version": "1.1.0"
+  },
+  {
+    "name": "sample_08_very_high",
+    "profile": "profiles/sample_08_very_high.json",
+    "statement": "statements/sample_08_very_high.csv",
+    "probability_of_default": 0.5653881415324158,
+    "band": "very_high",
+    "decision": "decline",
+    "model_version": "1.1.0"
+  },
+  {
+    "name": "sample_09_thin_file",
+    "profile": "profiles/sample_09_thin_file.json",
+    "statement": null,
+    "probability_of_default": 0.3688760787012371,
+    "band": "very_high",
+    "decision": "decline",
+    "model_version": "1.1.0"
+  },
+  {
+    "name": "sample_10_thin_file",
+    "profile": "profiles/sample_10_thin_file.json",
+    "statement": null,
+    "probability_of_default": 0.19197480593987312,
+    "band": "medium",
+    "decision": "decline",
+    "model_version": "1.1.0"
+  }
+]

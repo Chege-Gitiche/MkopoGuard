@@ -1,0 +1,18 @@
+{
+  "applicant_ref": "SAMPLE-06",
+  "application_date": "2025-05-07",
+  "age": 26,
+  "income_quintile": 1,
+  "in_workforce": true,
+  "education_level": "primary_or_less",
+  "loan_amount_kes": 10500,
+  "term_months": 6,
+  "saved_past_year": true,
+  "saved_in_savings_club": false,
+  "borrowed_past_year": true,
+  "borrowed_from_fin_institution": true,
+  "borrowed_from_family_friends": false,
+  "borrowed_for_medical": true,
+  "emergency_fund_source": "family_friends",
+  "worried_about_bills": "very"
+}
