@@ -12,6 +12,7 @@ Roles
            history, but never writes anything to the database (enforced in step 5.5)
 """
 
+import logging
 from datetime import datetime
 from typing import Annotated
 
@@ -22,10 +23,12 @@ from sqlalchemy.orm import Session
 
 from mkopoguard.api import security
 from mkopoguard.api.db import get_session
+from mkopoguard.api.hardening import client_ip, email_tag
 from mkopoguard.api.models import User
 from mkopoguard.api.users import find_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+log = logging.getLogger("mkopoguard.api.auth")
 SessionDep = Annotated[Session, Depends(get_session)]
 # tokenUrl makes the "Authorize" button in /docs log in through /auth/login
 bearer = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -100,11 +103,25 @@ def login(
 ) -> Token:
     """Email (in the `username` field) and password in; a short-lived access token out."""
     settings = request.app.state.settings
+    limiter, ip, tag = request.app.state.login_limiter, client_ip(request), email_tag(form.username)
+    wait = limiter.check(ip, form.username)  # before any password work
+    if wait is not None:
+        log.warning("Login rate-limited: ip=%s account=%s wait=%ss", ip, tag, wait)
+        minutes = max(1, -(-wait // 60))
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many login attempts. Wait {minutes} minute(s) and try again.",
+            headers={"Retry-After": str(wait)},
+        )
     user = find_user(session, form.username)
     hashed = user.hashed_password if user else security.dummy_hash()
     password_ok = security.verify_password(form.password, hashed)  # always run: same timing
     if user is None or not password_ok or not user.is_active:
+        limiter.failed(ip, form.username)
+        log.info("Login failed: ip=%s account=%s", ip, tag)  # never the email or password
         raise _unauthorized(LOGIN_FAILED)
+    limiter.succeeded(ip, form.username)
+    log.info("Login ok: user=%s", user.id)
     token = security.create_access_token(
         user.id,
         user.role,

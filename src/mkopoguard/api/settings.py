@@ -40,6 +40,11 @@ class Settings(DatabaseSettings):
     bundle_dir: Path = config.BUNDLE_DIR
     frontend_dir: Path = config.PROJECT_ROOT / "frontend"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    # Login rate limits (step 5.7)
+    login_attempts_per_ip: int = Field(default=20, ge=1)
+    login_ip_window_seconds: int = Field(default=300, ge=1)
+    login_failures_per_account: int = Field(default=5, ge=1)
+    login_failure_window_seconds: int = Field(default=900, ge=1)
 
     @field_validator("secret_key")
     @classmethod

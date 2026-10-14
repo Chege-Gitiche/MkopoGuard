@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from mkopoguard import config
-from mkopoguard.api import auth, history, predict
+from mkopoguard.api import auth, hardening, history, predict
 from mkopoguard.api.db import check_schema, database_ok, make_engine, make_sessions
 from mkopoguard.api.settings import Settings, get_settings
 from mkopoguard.bundle import load_bundle
@@ -40,7 +40,7 @@ class Health(BaseModel):
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Build the app. Tests pass their own settings; uvicorn calls it with none (--factory)."""
     settings = settings or get_settings()
-    logging.basicConfig(level=settings.log_level, format="%(asctime)s %(levelname)s %(message)s")
+    hardening.configure_logging(settings.log_level)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -69,6 +69,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.login_limiter = hardening.LoginLimiter(
+        settings.login_attempts_per_ip,
+        settings.login_ip_window_seconds,
+        settings.login_failures_per_account,
+        settings.login_failure_window_seconds,
+    )
+    hardening.install(app)  # request ids, no stack traces in responses, security headers
 
     @app.get("/health", response_model=Health, tags=["system"])
     def health(request: Request) -> Health:
