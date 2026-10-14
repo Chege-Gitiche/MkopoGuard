@@ -7,3 +7,6 @@ mlruns/
 !models/champion/
 !models/champion/**
 .env
+
+# local API database : never commit
+mkopoguard.db

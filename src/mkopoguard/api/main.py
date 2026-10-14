@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from mkopoguard import config
+from mkopoguard.api.db import check_schema, database_ok, make_engine, make_sessions
 from mkopoguard.api.settings import Settings, get_settings
 from mkopoguard.bundle import load_bundle
 
@@ -31,6 +32,7 @@ class Health(BaseModel):
     status: str
     model_name: str
     model_version: str
+    database: str
     uptime_seconds: float
 
 
@@ -42,7 +44,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         bundle = load_bundle(settings.bundle_dir)  # raises if corrupted: the app won't start
-        app.state.bundle = bundle
+        engine = make_engine(settings.database_url)
+        revision = check_schema(engine)  # raises if `alembic upgrade head` wasn't run
+        app.state.bundle, app.state.engine = bundle, engine
+        app.state.sessions = make_sessions(engine)
         app.state.started = time.monotonic()
         log.info(
             "Serving %s v%s (%s)",
@@ -50,7 +55,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             bundle.manifest["version"],
             settings.environment,
         )
+        log.info("Database schema at migration %s", revision)
         yield
+        engine.dispose()
 
     app = FastAPI(
         title="MkopoGuard API",
@@ -69,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             status="ok",
             model_name=bundle.manifest["name"],
             model_version=bundle.manifest["version"],
+            database="ok" if database_ok(request.app.state.engine) else "unavailable",
             uptime_seconds=round(time.monotonic() - request.app.state.started, 1),
         )
 

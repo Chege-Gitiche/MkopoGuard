@@ -22,16 +22,21 @@ ENV_PREFIX = "MKOPOGUARD_"
 PLACEHOLDER = "change-me"
 
 
-class Settings(BaseSettings):
+class DatabaseSettings(BaseSettings):
+    """Only the database URL: what Alembic needs to run migrations (no secret key required)."""
+
     model_config = SettingsConfigDict(
         env_prefix=ENV_PREFIX, env_file=ENV_FILE, env_file_encoding="utf-8", extra="ignore"
     )
 
+    database_url: str = f"sqlite:///{(config.PROJECT_ROOT / 'mkopoguard.db').as_posix()}"
+
+
+class Settings(DatabaseSettings):
     environment: Literal["development", "test", "production"] = "development"
     # Signs the login tokens (step 5.3). Anyone who has it can forge a login, so it is a secret.
     secret_key: SecretStr = Field(min_length=32)
     access_token_minutes: int = Field(default=30, ge=5, le=120)
-    database_url: str = f"sqlite:///{(config.PROJECT_ROOT / 'mkopoguard.db').as_posix()}"
     bundle_dir: Path = config.BUNDLE_DIR
     frontend_dir: Path = config.PROJECT_ROOT / "frontend"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
