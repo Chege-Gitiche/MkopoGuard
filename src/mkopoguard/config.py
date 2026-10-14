@@ -141,6 +141,7 @@ TEST_RUNS_LOG = PROJECT_ROOT / "docs" / "results" / "test_runs.log"
 
 # --- Model bundle (step 3.13) ----------------------------------------------------------
 MODEL_NAME = "mkopoguard-champion"
-MODEL_VERSION = "1.0.0"
+MODEL_VERSION = "1.1.0"  # 1.1.0: + explainer background, full card
 BUNDLE_DIR = PROJECT_ROOT / "models" / "champion"
 GOLDEN_TOLERANCE = 1e-9  # reloaded predictions may differ from the saved ones by at most this
+MODEL_CARD_FILE = PROJECT_ROOT / "docs" / "model_card.md"

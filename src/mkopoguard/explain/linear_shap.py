@@ -22,7 +22,11 @@ import pandas as pd
 
 
 class LinearShap:
-    def __init__(self, pipeline, background: pd.DataFrame):
+    def __init__(self, pipeline, background: pd.DataFrame | None = None, mean=None):
+        """Give the background applicants, OR their saved transformed means (mean), as stored in
+        the bundle's explainer_background.json (step 4.5), so the API needs no training data."""
+        if (background is None) == (mean is None):
+            raise ValueError("Give exactly one of background or mean")
         self.prep = pipeline.named_steps["prep"]
         model = pipeline.named_steps["model"]
         if not hasattr(model, "coef_"):
@@ -30,8 +34,13 @@ class LinearShap:
         self.columns = list(self.prep.feature_names_in_)
         self.coef = pd.Series(model.coef_[0], index=self.prep.get_feature_names_out())
         self.intercept = float(model.intercept_[0])
-        transformed = self.prep.transform(background[self.columns])
-        self.mean = transformed.mean()
+        if background is not None:
+            self.mean = self.prep.transform(background[self.columns]).mean()
+        else:
+            self.mean = pd.Series(mean, dtype=float).reindex(self.coef.index)
+            if self.mean.isna().any():
+                missing = list(self.mean.index[self.mean.isna()])
+                raise ValueError(f"The saved means don't match the model's columns: {missing}")
         self.base_value = self.intercept + float((self.mean * self.coef).sum())
         self.source = self._source_columns()
 

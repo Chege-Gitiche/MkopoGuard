@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 
 from mkopoguard import bundle, config
+from mkopoguard.explain.reasons import Reasoner
 from mkopoguard.features.columns import TARGET
 from mkopoguard.model_card import build_model_card
 from mkopoguard.models.experiment import load_training_data
@@ -115,16 +116,23 @@ def main() -> None:
     gap = float(np.max(np.abs(p_bundle - p_mlflow)))
     if gap > config.GOLDEN_TOLERANCE:
         raise SystemExit(f"Bundle predictions differ from the MLflow model by {gap:.3g}")
+    # Reasons from the saved background must be exactly the reasons from the full data
+    sample = validation.sample(500, random_state=0)
+    if loaded.reasoner().explain_rows(sample) != Reasoner(pipeline, development).explain_rows(
+        sample
+    ):
+        raise SystemExit("Reasons from the bundle differ from reasons built from the data")
     problems = bundle.check_input(validation, loaded.schema)
     if problems["errors"]:
         raise SystemExit(f"Validation applicants fail the input schema: {problems['errors']}")
 
     shutil.rmtree(out, ignore_errors=True)
     staging.rename(out)
+    config.MODEL_CARD_FILE.write_text(card, encoding="utf-8", newline="\n")  # same text as bundle
     sizes = {f.name: f.stat().st_size for f in out.iterdir()}
     print(f"Bundle {config.MODEL_NAME} v{config.MODEL_VERSION} written to {out}")
     for name, size in sorted(sizes.items()):
-        print(f"  {name:<22} {size / 1024:7.1f} KB")
+        print(f"  {name:<26} {size / 1024:7.1f} KB")
     print(f"  {len(loaded.columns)} input columns, {len(loaded.golden)} golden examples")
     print(
         f"Reloaded from disk: checksums OK, golden examples OK, max difference from the "
@@ -132,6 +140,8 @@ def main() -> None:
     )
     default_rate = validation[TARGET].mean()
     print(f"Validation check: mean predicted {p_bundle.mean():.3f} vs actual {default_rate:.3f}")
+    print("Reason codes from the bundle match reasons built from the data (500 applicants)")
+    print(f"Model card written to {config.MODEL_CARD_FILE.relative_to(config.PROJECT_ROOT)}")
 
 
 if __name__ == "__main__":

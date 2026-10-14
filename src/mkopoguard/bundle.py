@@ -26,6 +26,7 @@ import pandas as pd
 import skops.io as sio
 
 from mkopoguard import config
+from mkopoguard.explain.reasons import Reasoner
 from mkopoguard.features.preprocess import BINARY, CATEGORICAL, NUMERIC, SKOPS_TRUSTED_TYPES
 from mkopoguard.models import decision as dec
 
@@ -35,6 +36,7 @@ FILES = {
     "policy": "decision_policy.json",
     "golden": "golden_examples.json",
     "card": "model_card.md",
+    "explainer": "explainer_background.json",  # v1.1.0: reason codes without training data
 }
 MANIFEST = "manifest.json"
 LIBRARIES = ("sklearn", "numpy", "pandas", "skops")
@@ -168,6 +170,7 @@ class Bundle:
     manifest: dict
     golden: list[dict]
     path: Path
+    explainer: dict | None = None
 
     @property
     def columns(self) -> list[str]:
@@ -195,6 +198,12 @@ class Bundle:
             },
             index=frame.index,
         )
+
+    def reasoner(self) -> Reasoner:
+        """Reason codes (step 4.2) from the saved explainer background: no training data needed."""
+        if not self.explainer:
+            raise BundleError("This bundle has no explainer background; rebuild it (v1.1.0+)")
+        return Reasoner(self.model, saved=self.explainer)
 
     def verify_golden(self, tolerance: float = config.GOLDEN_TOLERANCE) -> float:
         """Re-score the golden examples; fail if any probability or decision has changed."""
@@ -264,6 +273,8 @@ def build_bundle(
     ]
     _write_json(out_dir / FILES["golden"], golden)
     _write_text(out_dir / FILES["card"], model_card)
+    background = Reasoner(pipeline, development).to_background()
+    _write_json(out_dir / FILES["explainer"], background)
 
     manifest = {
         "name": config.MODEL_NAME,
@@ -304,7 +315,12 @@ def load_bundle(path: Path = config.BUNDLE_DIR, verify_golden: bool = True) -> B
     schema = json.loads((path / FILES["schema"]).read_text(encoding="utf-8"))
     policy = dec.load_policy(path / FILES["policy"])
     golden = json.loads((path / FILES["golden"]).read_text(encoding="utf-8"))
-    bundle = Bundle(model, schema, policy, manifest, golden, path)
+    explainer = None
+    if FILES["explainer"] in manifest["files"]:  # v1.0.0 bundles don't have one
+        explainer = json.loads((path / FILES["explainer"]).read_text(encoding="utf-8"))
+    bundle = Bundle(model, schema, policy, manifest, golden, path, explainer)
+    if explainer is not None:
+        bundle.reasoner()  # refuses a background that doesn't match the model
     if verify_golden:
         bundle.verify_golden()
     return bundle

@@ -318,11 +318,34 @@ def _reason(code: str, contribution: float, values: dict, log_odds: float) -> Re
 
 
 class Reasoner:
-    """Builds reason codes for the champion. background = the development applicants."""
+    """Builds reason codes for the champion.
 
-    def __init__(self, pipeline, background: pd.DataFrame):
-        self.explainer = LinearShap(pipeline, background)
-        self.shift = statement_shift(self.explainer, background)
+    background = the development applicants, or saved = the dict from to_background(), as
+    stored in the bundle (step 4.5). Both give exactly the same reasons.
+    """
+
+    def __init__(self, pipeline, background: pd.DataFrame | None = None, saved: dict | None = None):
+        if (background is None) == (saved is None):
+            raise ValueError("Give exactly one of background or saved")
+        if background is not None:
+            self.explainer = LinearShap(pipeline, background)
+            self.shift = statement_shift(self.explainer, background)
+            return
+        self.explainer = LinearShap(pipeline, mean=saved["transformed_mean"])
+        self.shift = pd.Series(saved["statement_shift"], dtype=float)
+        expected = [c for c in STATEMENT_COLUMNS if c != design.STATEMENT_FLAG]
+        if list(self.shift.index) != expected:
+            raise ValueError("The saved statement shift doesn't list the statement columns")
+        if not math.isclose(self.explainer.base_value, saved["base_value"], abs_tol=1e-9):
+            raise ValueError("The saved background doesn't match this model (base value differs)")
+
+    def to_background(self) -> dict:
+        """Everything needed to rebuild this Reasoner without the training data (JSON-safe)."""
+        return {
+            "transformed_mean": {k: float(v) for k, v in self.explainer.mean.items()},
+            "statement_shift": {k: float(v) for k, v in self.shift.items()},
+            "base_value": float(self.explainer.base_value),
+        }
 
     def units(self, frame: pd.DataFrame) -> pd.DataFrame:
         contribs = self.explainer.contributions(frame)

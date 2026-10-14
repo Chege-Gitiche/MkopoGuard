@@ -8,6 +8,7 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 
 from mkopoguard import bundle, config
+from mkopoguard.explain.reasons import Reasoner
 from mkopoguard.features.preprocess import (
     BINARY,
     CATEGORICAL,
@@ -16,7 +17,7 @@ from mkopoguard.features.preprocess import (
     make_pipeline,
 )
 from mkopoguard.features.transactions import FEATURES as STATEMENT_FEATURES
-from mkopoguard.model_card import build_model_card
+from mkopoguard.model_card import build_model_card, load_evidence
 from mkopoguard.models import decision as dec
 from mkopoguard.models import final
 
@@ -216,7 +217,55 @@ def test_model_card_quotes_the_test_report_numbers(data, pipeline):
     p = pipeline.predict_proba(holdout[input_columns()])[:, 1]
     report = final.build_report(holdout, p, resamples=100)
     report |= {"trained_on": {"applicants": 900}, "ceiling_pr_auc": 0.6}
-    card = build_model_card(report, POLICY, ["loan", "profile"], "run123")
+    card = build_model_card(report, POLICY, ["loan", "profile"], "run123", load_evidence())
     assert f"{report['ranking']['pr_auc']['value']:.3f}" in card
     assert "run123" in card and "synthetic" in card.lower()
     assert f"{POLICY['thresholds_by_term_months'][1]:.3f}" in card
+
+
+# --- explainer background (step 4.5) -----------------------------------------------------------
+
+
+def test_bundle_carries_the_explainer_background(built):
+    saved = json.loads((built / "explainer_background.json").read_text(encoding="utf-8"))
+    assert {"transformed_mean", "statement_shift", "base_value"} <= set(saved)
+
+
+def test_saved_background_gives_exactly_the_same_reasons(built, data, pipeline):
+    train, holdout = data
+    sample = holdout.head(40)
+    from_bundle = bundle.load_bundle(built).reasoner().units(sample)
+    from_data = Reasoner(pipeline, train).units(sample)
+    pd.testing.assert_frame_equal(from_bundle, from_data)
+
+
+def test_a_background_from_another_model_is_refused(built, data):
+    train, _ = data
+    other = make_pipeline(LogisticRegression(C=0.01, max_iter=500)).fit(
+        train[input_columns()], train["defaulted"]
+    )
+    saved = bundle.load_bundle(built).explainer
+    with pytest.raises(ValueError, match="base value"):
+        Reasoner(other, saved=saved)
+
+
+def test_saved_means_must_cover_every_model_column(built, pipeline):
+    saved = bundle.load_bundle(built).explainer
+    saved["transformed_mean"].pop(next(iter(saved["transformed_mean"])))
+    with pytest.raises(ValueError, match="don't match"):
+        Reasoner(pipeline, saved=saved)
+
+
+def test_reasoner_needs_exactly_one_background(pipeline, data):
+    train, _ = data
+    with pytest.raises(ValueError, match="exactly one"):
+        Reasoner(pipeline)
+    with pytest.raises(ValueError, match="exactly one"):
+        Reasoner(pipeline, train, saved={})
+
+
+def test_a_bundle_without_a_background_cannot_give_reasons(built):
+    loaded = bundle.load_bundle(built)
+    loaded.explainer = None
+    with pytest.raises(bundle.BundleError, match="explainer"):
+        loaded.reasoner()
