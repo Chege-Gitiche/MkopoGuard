@@ -392,3 +392,36 @@ def test_the_api_client_sends_same_origin_credentials_and_the_app_header():
     for path in ("/auth/login", "/auth/logout", "/auth/me", "/predict", "/predictions",
                  "/model/info", "/health"):  # fmt: skip
         assert f'"{path}' in text or f"`{path}" in text, path
+
+
+# --- login and logout (step 6.4) ------------------------------------------------------------
+
+
+def test_login_page_runs_login_js_and_has_places_for_messages():
+    page = parse("index.html")
+    assert [a["src"] for a in page.all("script")] == ["/js/login.js"]
+    ids = set(page.ids())
+    assert {"login-form", "login-status", "login-error", "login-error-text"} <= ids
+    roles = {a.get("id"): a.get("role") for _, a in page.tags if a.get("id")}
+    assert roles["login-status"] == "status" and roles["login-error"] == "alert"
+
+
+@pytest.mark.parametrize("name", APP_PAGES + ["404.html"])
+def test_app_pages_check_the_session_first(name):
+    sources = [a["src"] for a in parse(name).all("script")]
+    assert sources[0] == "/js/session.js"
+
+
+@pytest.mark.parametrize("name", APP_PAGES + ["404.html"])
+def test_no_officer_name_is_hard_coded_in_the_header(name):
+    html = (FRONTEND / name).read_text(encoding="utf-8")
+    assert re.search(r'<span id="account-name"></span>', html)
+    assert re.search(r'<span class="role" id="account-role" hidden></span>', html)
+
+
+def test_scripts_never_write_html():
+    """Text goes in with textContent, so a name or reference can never become markup."""
+    for path in (FRONTEND / "js").glob("*.js"):
+        text = path.read_text(encoding="utf-8")
+        for risky in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("):
+            assert risky not in text, f"{path.name}: {risky}"

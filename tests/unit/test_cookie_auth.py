@@ -114,6 +114,30 @@ def test_a_deactivated_officers_cookie_stops_working(client, url):
     assert client.get("/auth/me").status_code == 401
 
 
+# --- logging out (step 6.4) ----------------------------------------------------------------
+
+
+def test_logout_clears_the_session_cookie(client):
+    app_login(client)
+    response = client.post("/auth/logout", headers=FROM_APP)
+    assert response.status_code == 204 and response.content == b""
+    cookie = response.headers["set-cookie"].lower()
+    assert cookie.startswith(f"{SESSION_COOKIE}=")
+    assert "max-age=0" in cookie
+    assert "httponly" in cookie and "samesite=strict" in cookie and "path=/" in cookie
+    assert client.get("/auth/me").status_code == 401  # the browser no longer sends it
+
+
+def test_logout_works_with_no_session_or_an_expired_one(client):
+    assert client.post("/auth/logout").status_code == 204
+    client.cookies.set(SESSION_COOKIE, "an-expired-or-broken-token")
+    assert client.post("/auth/logout").status_code == 204
+
+
+def test_logout_is_never_cached(client):
+    assert client.post("/auth/logout").headers["cache-control"] == "no-store"
+
+
 # --- the cross-site request forgery guard ------------------------------------------------------
 
 

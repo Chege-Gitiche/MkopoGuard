@@ -142,14 +142,24 @@ export const api = {
     return request("/auth/login", { method: "POST", body, loginOn401: false });
   },
 
-  /** Log out: the server clears the session cookie (endpoint added in step 6.4). */
+  /** Log out: the server clears the session cookie. */
   logout() {
     return request("/auth/logout", { method: "POST", loginOn401: false });
   },
 
-  /** The logged-in officer: { id, email, full_name, role, created_at }. */
+  /** The logged-in officer: { id, email, full_name, role, created_at }. 401 -> login page. */
   me() {
     return request("/auth/me");
+  },
+
+  /** The logged-in officer, or null if nobody is signed in (no redirect: for the login page). */
+  async currentUser() {
+    try {
+      return await request("/auth/me", { loginOn401: false });
+    } catch (error) {
+      if (error.status === 401) return null;
+      throw error;
+    }
   },
 
   /** Score an applicant. profile is a plain object; statement is a File or null. */

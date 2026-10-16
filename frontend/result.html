@@ -8,6 +8,7 @@
   <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/style.css">
+  <script type="module" src="/js/session.js"></script>
   <script type="module" src="/js/ui.js"></script>
 </head>
 <body>
@@ -23,7 +24,7 @@
         </ul>
       </nav>
       <div class="account">
-        <span><span class="visually-hidden">Signed in as </span><span id="account-name">Wanjiku Mwangi</span> <span class="role" id="account-role">officer</span></span>
+        <span><span class="visually-hidden">Signed in as </span><span id="account-name"></span> <span class="role" id="account-role" hidden></span></span>
         <form action="/auth/logout" method="post">
           <button class="button-quiet" type="submit">Log out</button>
         </form>

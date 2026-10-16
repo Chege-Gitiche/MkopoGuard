@@ -77,6 +77,17 @@ def set_session_cookie(response: Response, token: str, settings) -> None:
     )
 
 
+def clear_session_cookie(response: Response, settings) -> None:
+    """Tell the browser to forget the session cookie (same name, path and flags as when set)."""
+    response.delete_cookie(
+        SESSION_COOKIE,
+        path="/",
+        httponly=True,
+        samesite="strict",
+        secure=settings.environment == "production",
+    )
+
+
 class UserOut(BaseModel):
     """What the API shows about a user: never the password hash."""
 
@@ -185,3 +196,21 @@ def login(
 def me(user: CurrentUser) -> User:
     """The logged-in user's own details."""
     return user
+
+
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    summary="Log out",
+)
+def logout(request: Request) -> Response:
+    """Clear the web app's session cookie. Works whether or not the session is still valid.
+
+    Login tokens are not stored on the server, so a copy of a token (a bearer token from
+    /docs, say) keeps working until it expires, at most `access_token_minutes` later.
+    """
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    clear_session_cookie(response, request.app.state.settings)
+    log.info("Logout")
+    return response
