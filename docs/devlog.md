@@ -945,3 +945,82 @@ Investigating showed that in the simulator itself, more borrowings among overdra
 **Decisions:** keep the smoke script independent of the test client, so the same checks run against the live URL in Phase 8.
 
 **Next:** Phase 6, the loan-officer frontend: six screens in HTML, CSS and plain JavaScript, served by the same app, aiming for an accessibility score of 90 or more.
+
+## 2026-10-16 · Step 6.1 — Wireframes in Figma
+
+**Goal:** Draw all six screens (Login, New assessment, Result, History, Prediction detail, Model info) at desktop (1440 px) and mobile (360 px) width before writing any HTML.
+
+**Did:** Drew 12 frames in Figma and exported them to `docs/img/wireframes/` with a README that lists each screen. The content of every screen came from what the API really sends and accepts: the real form fields and their options, and sample 07's real result (49.1%, very high, decline) instead of lorem ipsum. Made the header, footer and demo banner into shared components. Chose the risk band colours: a pale background with dark text for each band, every pair checked at 5.7 : 1 contrast or better (WCAG AA asks for 4.5 : 1).
+
+**Broke / learned:** There is no Figma connection in my AI workspace, so I drew the frames by hand from a written spec, which turned out to be good practice. Bright yellow or orange text fails contrast on white, so the colour goes in the background and the meaning goes in the text. The bands also get steadily darker from Low to Very high, so they still read in order for colour-blind users.
+
+**Decisions:** Greyscale wireframes, with colour only on the risk bands. The band is always written out in words as well as shown in colour (needed for step 6.7). The "Not for real lending decisions" footer goes on every screen, login included.
+
+## 2026-10-16 · Step 6.2 — Static pages
+
+**Goal:** Build the six screens in plain HTML and CSS: semantic markup, one shared stylesheet with colour variables, working down to 360 px wide.
+
+**Did:** Wrote `frontend/css/style.css` with every colour as a `:root` variable, and seven pages: login (`index.html`), `assess.html`, `result.html`, `history.html`, `detail.html`, `about.html` and a friendly `404.html`. Every field has a label, radio groups sit in fieldsets, tables have captions, and every page has a skip link and the disclaimer footer. The font is Atkinson Hyperlegible Next (free licence, hosted with the app): it was designed so 1, l and I, and 0 and O, never look alike, which helps when reading references and amounts in KSh. The one bold element is the score scale on the Result page: the probability as a marker on a 0–100% bar split into the four bands, with the decline threshold as a dashed line. Added 88 tests: labels, headings, unique ids, contrast, form fields matching the API's schema, and pages and files served with the right types. The axe accessibility checker found zero problems at both widths.
+
+**Broke / learned:**
+- The font came back from the server as the wrong file type on Windows only. Python reads file types from the Windows registry, where `.woff2` is often missing or wrong, and our "don't guess file types" header means the browser must get the right one. Fixed by setting the frontend's file types in `main.py`.
+- Two leftover `.gitkeep` placeholders failed the test that only allows site files in `frontend/`. Deleted the one in `css/` and made the test ignore placeholders.
+- Fixed layout problems found in screenshots: radio buttons wrapping onto a second line, follow-up questions drawn as boxes inside boxes, band names crowding under the scale on phones, and band tags stretching across mobile cards.
+- With no JavaScript yet, signing in showed the API's raw JSON reply, which is expected at this stage.
+
+**Decisions:**
+- The Model info page is `about.html` and the detail page is `detail.html`: names like `model.html` or `predictions.html` would have fallen under the API's no-cache rule, which matches paths starting with `/model` or `/predict`.
+- On phones the History table becomes stacked cards, but keeps its table roles so screen readers still read it as a table.
+- The navigation wraps onto its own row on phones instead of hiding behind a Menu button that would need JavaScript.
+
+## 2026-10-16 · Step 6.3 — API client module
+
+**Goal:** One place for every call to the server (`js/api.js`), sending the login cookie on same-site requests only and going to the login page on a 401.
+
+**Did:**
+- **API client:** wrote `frontend/js/api.js` with one function per endpoint. It is the only place `fetch` is called, and a test enforces that. Errors become messages an officer can act on: wrong details, field-by-field problems (422), the wait time (429), a reference number (500), and "Can't reach the server". A 401 sends the officer to login and brings them back to the page they were on, but only to pages on this site.
+- **Cookie login:** when the app's own JavaScript logs in, the server puts the token in an HttpOnly, SameSite=Strict cookie (Secure on the live site), so the page never sees it. `/docs` and scripts still get a normal token in the reply.
+- **Content-Security-Policy:** the strict policy deferred from Phase 5 is now on. Pages may only run scripts, styles and fonts from this server, never inline code; `/docs` gets a looser policy of its own for Swagger.
+- **Tests:** added 43. Checked it all in a real browser: login, history, scoring, a forged request refused, the rate limit and a network failure.
+
+**Broke / learned:**
+- The guide wanted the token in an HttpOnly cookie, but Phase 5 was built on bearer tokens. Both now work side by side.
+- The new policy blocks inline styles, which broke the score-scale markers. They now use `data-at="49.1%"`, and a small `js/ui.js` sets the position from JavaScript, which the policy allows.
+- A `csrftoken` cookie showed up in the console check. It wasn't ours: it was left over from another project that once ran at `127.0.0.1:8000`, because browsers keep cookies per address, not per app.
+- The browser test tool hit our own policy when it tried to run code from a text string, which showed the policy really is active.
+
+**Decisions:** Any request that changes something and is logged in by the cookie must also carry `X-Requested-With: fetch`. Other websites can't add that header, so they can't act as the officer: a second lock against cross-site request forgery on top of SameSite=Strict. The cookie is only set when the login request carries that header, so a form posted from another site can't sign someone into the attacker's account either.
+
+## 2026-10-16 · Step 6.4 — Login and logout
+
+**Goal:** A working login page and Log out button, with logout clearing the cookie through a new `/auth/logout` endpoint.
+
+**Did:**
+- **Logout endpoint:** added `POST /auth/logout`. It clears the cookie (204) whether or not the session is still valid.
+- **Login page (`js/login.js`):** shows errors on the page itself (wrong details, too many attempts, server unreachable), and messages for an ended session and for logging out. It shows a busy "Signing in…" button and returns you to the page you came from. If you're already signed in, it sends you straight on.
+- **Every page behind the login (`js/session.js`):** checks the session as the page opens, fills in your name and role, shows the demo banner for the demo account, and makes Log out work. Removed the made-up officer name from the header.
+- **Tests:** added 17. Checked every case in a browser, including logging out with the keyboard and a login link that tried to send you to another site.
+
+**Broke / learned:** Login tokens aren't stored on the server, so logging out removes the cookie but can't cancel a token someone copied (from `/docs`, say); it keeps working until it expires, at most 30 minutes. A server-side block-list would fix that, but it's more than this project needs.
+
+**Decisions:** A test fails if any script writes HTML (`innerHTML` and similar), so names and references always go onto the page as plain text. Pages that need the signed-in user wait for it with `await session` instead of asking the server again.
+
+## 2026-10-16 · Step 6.5 — Assessment flow
+
+**Goal:** The New assessment form working end to end: load a sample, check the answers in the browser, score with a loading state, then show the result.
+
+**Did:**
+- **Samples:** the server now publishes the ten synthetic samples read-only at `/samples`. "Load sample" fills the form and attaches the matching M-Pesa statement.
+- **Checks in the browser:** every problem is listed at the top, with links, and also shown under its own field. The server still checks everything again, and its errors are shown the same way.
+- **Scoring and result:** while scoring, the button shows "Assessing…" and can't be clicked twice. The Result page shows the live score, band, decision, scale, the 3 + 2 reasons and the record. `js/render.js` draws it and will be reused for the detail page.
+- **Check in the browser:** all 10 samples gave exactly the score the API recorded, from 3.6% to 56.5%, and axe found zero problems on the form with errors showing or on the Result page.
+- **Tests:** added 8, including one that reads the browser's rules out of `assess.js` and fails if they ever differ from the API's.
+
+**Broke / learned:**
+- An existing test caught that the new `samples_dir` setting was missing from `.env.example`, which is what that test is for.
+- The API rejects "saved in a chama" when "saved any money" is No. Switching the follow-up to "No" automatically would have changed some samples' answers and scores, so only its "Yes" option is switched off.
+- The saved record from the server has no input warnings and no statement date range. Step 6.6 has to work with only the transaction count.
+
+**Decisions:** A saved assessment opens at `result.html?id=N`. Demo results aren't saved, so the result travels in the tab's session storage, tied to the user's ID, gone when the tab closes, and wiped on log out. The samples are public because they are made-up people already in the public repository; a test checks nothing outside that folder can be reached.
+
+**Next:** Step 6.6, History and the saved-record page: the live table with band, decision, reference and date filters, paging and an empty state, and `detail.html?id=N` showing a full saved assessment with all of the applicant's answers.
