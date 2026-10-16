@@ -7,6 +7,7 @@
 // Pages that need the user (steps 6.5, 6.6) can wait for it:  const user = await session;
 
 import { api } from "./api.js";
+import { forgetResults } from "./store.js";
 
 const ROLE_LABELS = { officer: "Officer", admin: "Admin", demo: "Demo" };
 
@@ -48,6 +49,7 @@ if (logoutForm) {
         return;
       }
     }
+    forgetResults(); // the last result shown in this tab goes with the session
     window.location.replace("/?reason=signed-out");
   });
 }

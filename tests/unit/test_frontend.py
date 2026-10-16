@@ -14,8 +14,9 @@ from fastapi.testclient import TestClient
 
 from mkopoguard import config
 from mkopoguard.api.main import create_app
-from mkopoguard.api.schemas import ApplicantProfile
+from mkopoguard.api.schemas import MAX_LOAN_KES, MIN_LOAN_KES, REF_PATTERN, ApplicantProfile
 from mkopoguard.api.settings import Settings
+from mkopoguard.api.statement import MAX_BYTES
 
 FRONTEND = config.PROJECT_ROOT / "frontend"
 PAGES = ["index.html", "assess.html", "result.html", "history.html", "detail.html", "about.html"]
@@ -425,3 +426,82 @@ def test_scripts_never_write_html():
         text = path.read_text(encoding="utf-8")
         for risky in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("):
             assert risky not in text, f"{path.name}: {risky}"
+
+
+# --- the assessment flow (step 6.5) -----------------------------------------------------------
+
+
+def js(name: str) -> str:
+    return (FRONTEND / "js" / name).read_text(encoding="utf-8")
+
+
+def ids_used(*scripts: str) -> set[str]:
+    """Every element id the scripts look up with getElementById("...")."""
+    text = "".join(js(name) for name in scripts)
+    return set(re.findall(r'getElementById\("([^"]+)"\)', text))
+
+
+def test_each_page_loads_its_script_after_the_session_check():
+    for page_name, script in (("assess.html", "/js/assess.js"), ("result.html", "/js/result.js")):
+        sources = [a["src"] for a in parse(page_name).all("script")]
+        assert sources[0] == "/js/session.js" and script in sources, page_name
+
+
+@pytest.mark.parametrize(
+    "page_name, scripts",
+    [("assess.html", ["assess.js"]), ("result.html", ["result.js", "render.js"])],
+)
+def test_every_element_a_script_needs_is_on_its_page(page_name, scripts):
+    missing = ids_used(*scripts) - set(parse(page_name).ids())
+    assert not missing, missing
+
+
+def test_browser_checks_match_the_api_rules():
+    """The browser checks first, the server decides: the two must agree on the rules."""
+    text = js("assess.js")
+    pattern = re.search(r"REF_PATTERN = /(.+)/;", text).group(1)
+    assert pattern == REF_PATTERN
+    limits = dict(re.findall(r"(\w+): \[?(\d+(?:, \d+)?)\]?,", text))
+    fields = ApplicantProfile.model_fields
+
+    def bounds(name):
+        metadata = {type(m).__name__: m for m in fields[name].metadata}
+        return f"{metadata['Ge'].ge}, {metadata['Le'].le}"
+
+    assert limits["age"] == bounds("age")
+    assert limits["income_quintile"] == bounds("income_quintile")
+    assert limits["loan_amount_kes"] == f"{MIN_LOAN_KES}, {MAX_LOAN_KES}"
+    assert limits["statement_bytes"] == str(MAX_BYTES)
+
+
+def test_the_reference_box_allows_as_many_characters_as_the_api():
+    ref = next(a for a in parse("assess.html").all("input") if a.get("name") == "applicant_ref")
+    assert ref["maxlength"] == "64" and "{2,63}" in REF_PATTERN
+
+
+def test_the_result_page_waits_for_its_data():
+    page = parse("result.html")
+    attrs = {a["id"]: a for _, a in page.tags if "id" in a}
+    assert "hidden" in attrs["result"]
+    assert attrs["result-status"].get("role") == "status"
+    html = (FRONTEND / "result.html").read_text(encoding="utf-8")
+    assert '<p class="lede" id="result-lede"></p>' in html
+
+
+def test_samples_are_served_for_load_sample(client):
+    manifest = client.get("/samples/manifest.json")
+    assert manifest.status_code == 200
+    assert manifest.headers["content-type"].startswith("application/json")
+    for entry in manifest.json():
+        profile = client.get(f"/samples/{entry['profile']}")
+        assert profile.status_code == 200, entry["name"]
+        ApplicantProfile.model_validate_json(profile.text)  # a valid profile, as the form sends
+        if entry["statement"]:
+            statement = client.get(f"/samples/{entry['statement']}")
+            assert statement.status_code == 200, entry["name"]
+            assert statement.headers["content-type"].startswith("text/csv")
+
+
+def test_the_samples_folder_serves_nothing_else(client):
+    assert client.get("/samples/../src/mkopoguard/config.py").status_code == 404
+    assert client.get("/samples/").status_code == 404  # no folder listing

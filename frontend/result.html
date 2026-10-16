@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <script type="module" src="/js/session.js"></script>
   <script type="module" src="/js/ui.js"></script>
+  <script type="module" src="/js/result.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -35,9 +36,12 @@
     <p class="notice" id="demo-notice" hidden>Demo account: assessments are not saved and your history stays empty.</p>
     <div class="page-head">
       <h1>Assessment result</h1>
-      <p class="lede">Applicant <span id="result-ref">SAMPLE-07</span>, KSh 2,500 over 1 month</p>
+      <p class="lede" id="result-lede"></p>
     </div>
 
+    <p class="notice" id="result-status" role="status">Loading the result…</p>
+
+    <div id="result" hidden>
     <section class="panel" aria-labelledby="verdict-heading">
       <h2 class="visually-hidden" id="verdict-heading">Score and decision</h2>
       <div class="verdict">
@@ -108,6 +112,7 @@
     <div class="actions">
       <a class="button" href="/assess.html">New assessment</a>
       <a class="button button-secondary" href="/detail.html?id=123" id="view-record">Open saved record</a>
+    </div>
     </div>
   </main>
   <footer class="site-footer">

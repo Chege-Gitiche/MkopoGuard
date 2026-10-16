@@ -39,6 +39,8 @@ class Settings(DatabaseSettings):
     access_token_minutes: int = Field(default=30, ge=5, le=120)
     bundle_dir: Path = config.BUNDLE_DIR
     frontend_dir: Path = config.PROJECT_ROOT / "frontend"
+    # The ten synthetic sample applicants, served read-only at /samples for "Load sample"
+    samples_dir: Path = config.PROJECT_ROOT / "samples"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     # Login rate limits (step 5.7)
     login_attempts_per_ip: int = Field(default=20, ge=1)

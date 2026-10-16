@@ -9,6 +9,7 @@
   <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/style.css">
   <script type="module" src="/js/session.js"></script>
+  <script type="module" src="/js/assess.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -68,7 +69,7 @@
           <div class="field">
             <label for="applicant_ref">Applicant reference</label>
             <p class="hint" id="applicant_ref-hint">Your own reference, for example APP-2026-0042. No names, phone or ID numbers.</p>
-            <input id="applicant_ref" name="applicant_ref" type="text" autocomplete="off" spellcheck="false" maxlength="40" required aria-describedby="applicant_ref-hint">
+            <input id="applicant_ref" name="applicant_ref" type="text" autocomplete="off" spellcheck="false" maxlength="64" required aria-describedby="applicant_ref-hint">
           </div>
           <div class="field">
             <label for="application_date">Application date</label>

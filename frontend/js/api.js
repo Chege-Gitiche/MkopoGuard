@@ -61,7 +61,8 @@ function fieldName(loc) {
   return parts.slice(start).join(".") || "request";
 }
 
-async function readBody(response) {
+async function readBody(response, as) {
+  if (as === "text" && response.ok) return response.text();
   const type = response.headers.get("content-type") || "";
   if (!type.includes("application/json")) return null;
   try {
@@ -97,8 +98,12 @@ function errorFrom(response, body) {
 /**
  * Send one request and return the parsed JSON body.
  * loginOn401: false for the calls where 401 is an answer, not an expired session (login).
+ * as: "json" (default) or "text" (a CSV file, say).
  */
-export async function request(path, { method = "GET", body, headers = {}, loginOn401 = true } = {}) {
+export async function request(
+  path,
+  { method = "GET", body, headers = {}, loginOn401 = true, as = "json" } = {},
+) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   let response;
@@ -110,7 +115,11 @@ export async function request(path, { method = "GET", body, headers = {}, loginO
       cache: "no-store",
       redirect: "error",
       signal: controller.signal,
-      headers: { Accept: "application/json", "X-Requested-With": "fetch", ...headers },
+      headers: {
+        Accept: as === "text" ? "text/plain, text/csv, */*" : "application/json",
+        "X-Requested-With": "fetch",
+        ...headers,
+      },
     });
   } catch (error) {
     const timedOut = error && error.name === "AbortError";
@@ -118,7 +127,7 @@ export async function request(path, { method = "GET", body, headers = {}, loginO
   } finally {
     clearTimeout(timer);
   }
-  const data = await readBody(response);
+  const data = await readBody(response, as);
   if (response.status === 401 && loginOn401) {
     goToLogin("expired");
     throw new ApiError(401, "Your session has ended. Please sign in again.");
@@ -183,6 +192,23 @@ export const api = {
   /** The model's version, test score, thresholds and bands. */
   modelInfo() {
     return request("/model/info");
+  },
+
+  /** The sample applicants: [{ name, profile, statement, probability_of_default, ... }]. */
+  samples() {
+    return request("/samples/manifest.json", { loginOn401: false });
+  },
+
+  /** One sample applicant's answers (an entry from samples()). */
+  sampleProfile(entry) {
+    return request(`/samples/${entry.profile}`, { loginOn401: false });
+  },
+
+  /** One sample applicant's M-Pesa statement as a File, ready to attach; null if none. */
+  async sampleStatement(entry) {
+    if (!entry.statement) return null;
+    const text = await request(`/samples/${entry.statement}`, { loginOn401: false, as: "text" });
+    return new File([text], entry.statement.split("/").pop(), { type: "text/csv" });
   },
 
   /** Is the server up? Public: works without logging in. */

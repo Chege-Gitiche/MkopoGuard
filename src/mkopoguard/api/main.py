@@ -39,6 +39,8 @@ STATIC_TYPES = {
     ".svg": "image/svg+xml",
     ".woff2": "font/woff2",
     ".txt": "text/plain",
+    ".json": "application/json",
+    ".csv": "text/csv",  # Windows often says application/vnd.ms-excel
 }
 for _ext, _kind in STATIC_TYPES.items():
     mimetypes.add_type(_kind, _ext)
@@ -109,6 +111,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(predict.router)
     app.include_router(history.router)
 
+    # The synthetic sample applicants (step 6.5). Public on purpose: they are made-up people,
+    # already in the public repository, and the login page never needs them.
+    app.mount(
+        "/samples", StaticFiles(directory=settings.samples_dir, check_dir=False), name="samples"
+    )
     # Last, so every API route above takes precedence over a file of the same name
     app.mount("/", StaticFiles(directory=settings.frontend_dir, html=True), name="frontend")
     return app
