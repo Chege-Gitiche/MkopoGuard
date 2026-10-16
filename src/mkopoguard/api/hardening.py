@@ -18,6 +18,10 @@
    on the log handlers masks anything that looks like a token or password anyway.
 5. Security headers on every response, and "no-store" on API responses (tokens and
    predictions must not sit in a browser or proxy cache).
+6. Content-Security-Policy (step 6.3): the browser runs scripts, styles, fonts and images
+   from this server only, never inline code, so injected HTML can't run script. The API
+   docs pages (/docs, /redoc) load Swagger UI from its CDN with inline setup code, so they
+   get a looser policy of their own; it still allows nothing but those files.
 """
 
 import hashlib
@@ -44,6 +48,42 @@ SECURITY_HEADERS = {
     "Referrer-Policy": "no-referrer",
 }
 NOT_CACHED = ("/auth", "/predict", "/predictions", "/model")  # responses with personal data
+CONTENT_SECURITY_POLICY = "; ".join(
+    [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'none'",
+        "object-src 'none'",
+    ]
+)
+DOCS_PATHS = ("/docs", "/redoc")
+DOCS_CONTENT_SECURITY_POLICY = "; ".join(
+    [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+        "img-src 'self' data: https://fastapi.tiangolo.com https://cdn.redoc.ly",
+        "font-src 'self' https://fonts.gstatic.com",
+        "connect-src 'self'",
+        "worker-src 'self' blob:",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'none'",
+        "object-src 'none'",
+    ]
+)
+
+
+def content_security_policy(path: str) -> str:
+    """The policy for one response: strict everywhere except the API docs pages."""
+    docs = any(path == prefix or path.startswith(prefix + "/") for prefix in DOCS_PATHS)
+    return DOCS_CONTENT_SECURITY_POLICY if docs else CONTENT_SECURITY_POLICY
 
 
 # --- 1. login rate limit -----------------------------------------------------------------------
@@ -192,6 +232,9 @@ def install(app: FastAPI) -> None:
         response.headers["X-Request-ID"] = rid
         for name, value in SECURITY_HEADERS.items():
             response.headers.setdefault(name, value)
+        response.headers.setdefault(
+            "Content-Security-Policy", content_security_policy(request.url.path)
+        )
         if request.url.path.startswith(NOT_CACHED):
             response.headers["Cache-Control"] = "no-store"
         request_id.reset(token)

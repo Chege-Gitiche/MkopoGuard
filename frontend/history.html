@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>History | MkopoGuard</title>
+  <meta name="description" content="Your past assessments.">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/assess.html">MkopoGuard</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/assess.html">New assessment</a></li>
+          <li><a href="/history.html" aria-current="page">History</a></li>
+          <li><a href="/about.html">Model info</a></li>
+        </ul>
+      </nav>
+      <div class="account">
+        <span><span class="visually-hidden">Signed in as </span><span id="account-name">Wanjiku Mwangi</span> <span class="role" id="account-role">officer</span></span>
+        <form action="/auth/logout" method="post">
+          <button class="button-quiet" type="submit">Log out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+  <main id="main">
+    <p class="notice" id="demo-notice" hidden>Demo account: assessments are not saved and your history stays empty.</p>
+    <div class="page-head">
+      <h1>History</h1>
+      <p>Assessments you have made, newest first. Dates are Kenyan time.</p>
+    </div>
+
+    <form class="filters" id="history-filters" action="/history.html" method="get" aria-label="Filter assessments">
+          <div class="field">
+            <label for="band">Risk band</label>
+            <select id="band" name="band">
+              <option value="">All bands</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="very_high">Very high</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="decision">Decision</label>
+            <select id="decision" name="decision">
+              <option value="">All decisions</option>
+              <option value="approve">Approve</option>
+              <option value="decline">Decline</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="ref">Reference starts with</label>
+            <input id="ref" name="ref" type="text" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="date_from">From</label>
+            <input id="date_from" name="date_from" type="date">
+          </div>
+          <div class="field">
+            <label for="date_to">To</label>
+            <input id="date_to" name="date_to" type="date">
+          </div>
+      <button class="button" type="submit">Apply filters</button>
+    </form>
+
+    <div class="table-wrap">
+      <table class="responsive-table" role="table" aria-describedby="history-count">
+        <caption class="visually-hidden">Your assessments</caption>
+        <thead role="rowgroup">
+          <tr role="row">
+            <th role="columnheader" scope="col">Date</th>
+            <th role="columnheader" scope="col">Reference</th>
+            <th role="columnheader" scope="col" class="number">Probability</th>
+            <th role="columnheader" scope="col">Band</th>
+            <th role="columnheader" scope="col">Decision</th>
+            <th role="columnheader" scope="col">Record</th>
+          </tr>
+        </thead>
+        <tbody role="rowgroup" id="history-rows">
+          <tr role="row">
+            <td role="cell" data-label="Date">16 Oct 2026, 10:05</td>
+            <td role="cell" data-label="Reference">SAMPLE-07</td>
+            <td role="cell" data-label="Probability" class="number">49.1%</td>
+            <td role="cell" data-label="Band"><span class="band band-very-high">Very high</span></td>
+            <td role="cell" data-label="Decision">Decline</td>
+            <td role="cell" data-label="Record"><a href="/detail.html?id=123">View<span class="visually-hidden"> SAMPLE-07</span></a></td>
+          </tr>
+          <tr role="row">
+            <td role="cell" data-label="Date">16 Oct 2026, 09:58</td>
+            <td role="cell" data-label="Reference">SAMPLE-08</td>
+            <td role="cell" data-label="Probability" class="number">56.5%</td>
+            <td role="cell" data-label="Band"><span class="band band-very-high">Very high</span></td>
+            <td role="cell" data-label="Decision">Decline</td>
+            <td role="cell" data-label="Record"><a href="/detail.html?id=122">View<span class="visually-hidden"> SAMPLE-08</span></a></td>
+          </tr>
+          <tr role="row">
+            <td role="cell" data-label="Date">16 Oct 2026, 09:51</td>
+            <td role="cell" data-label="Reference">SAMPLE-09</td>
+            <td role="cell" data-label="Probability" class="number">36.9%</td>
+            <td role="cell" data-label="Band"><span class="band band-very-high">Very high</span></td>
+            <td role="cell" data-label="Decision">Decline</td>
+            <td role="cell" data-label="Record"><a href="/detail.html?id=121">View<span class="visually-hidden"> SAMPLE-09</span></a></td>
+          </tr>
+          <tr role="row">
+            <td role="cell" data-label="Date">15 Oct 2026, 16:40</td>
+            <td role="cell" data-label="Reference">SAMPLE-05</td>
+            <td role="cell" data-label="Probability" class="number">25.0%</td>
+            <td role="cell" data-label="Band"><span class="band band-high">High</span></td>
+            <td role="cell" data-label="Decision">Approve</td>
+            <td role="cell" data-label="Record"><a href="/detail.html?id=120">View<span class="visually-hidden"> SAMPLE-05</span></a></td>
+          </tr>
+          <tr role="row">
+            <td role="cell" data-label="Date">15 Oct 2026, 16:32</td>
+            <td role="cell" data-label="Reference">SAMPLE-06</td>
+            <td role="cell" data-label="Probability" class="number">25.9%</td>
+            <td role="cell" data-label="Band"><span class="band band-high">High</span></td>
+            <td role="cell" data-label="Decision">Approve</td>
+            <td role="cell" data-label="Record"><a href="/detail.html?id=119">View<span class="visually-hidden"> SAMPLE-06</span></a></td>
+          </tr>
+          <tr role="row">
+            <td role="cell" data-label="Date">15 Oct 2026, 15:12</td>
+            <td role="cell" data-label="Reference">SAMPLE-10</td>
+            <td role="cell" data-label="Probability" class="number">19.2%</td>
+            <td role="cell" data-label="Band"><span class="band band-medium">Medium</span></td>
+            <td role="cell" data-label="Decision">Decline</td>
+            <td role="cell" data-label="Record"><a href="/detail.html?id=118">View<span class="visually-hidden"> SAMPLE-10</span></a></td>
+          </tr>
+          <tr role="row">
+            <td role="cell" data-label="Date">15 Oct 2026, 14:03</td>
+            <td role="cell" data-label="Reference">SAMPLE-04</td>
+            <td role="cell" data-label="Probability" class="number">12.5%</td>
+            <td role="cell" data-label="Band"><span class="band band-medium">Medium</span></td>
+            <td role="cell" data-label="Decision">Decline</td>
+            <td role="cell" data-label="Record"><a href="/detail.html?id=117">View<span class="visually-hidden"> SAMPLE-04</span></a></td>
+          </tr>
+          <tr role="row">
+            <td role="cell" data-label="Date">15 Oct 2026, 11:47</td>
+            <td role="cell" data-label="Reference">SAMPLE-03</td>
+            <td role="cell" data-label="Probability" class="number">10.6%</td>
+            <td role="cell" data-label="Band"><span class="band band-medium">Medium</span></td>
+            <td role="cell" data-label="Decision">Decline</td>
+            <td role="cell" data-label="Record"><a href="/detail.html?id=116">View<span class="visually-hidden"> SAMPLE-03</span></a></td>
+          </tr>
+          <tr role="row">
+            <td role="cell" data-label="Date">14 Oct 2026, 17:20</td>
+            <td role="cell" data-label="Reference">SAMPLE-01</td>
+            <td role="cell" data-label="Probability" class="number">7.5%</td>
+            <td role="cell" data-label="Band"><span class="band band-low">Low</span></td>
+            <td role="cell" data-label="Decision">Approve</td>
+            <td role="cell" data-label="Record"><a href="/detail.html?id=115">View<span class="visually-hidden"> SAMPLE-01</span></a></td>
+          </tr>
+          <tr role="row">
+            <td role="cell" data-label="Date">14 Oct 2026, 17:02</td>
+            <td role="cell" data-label="Reference">SAMPLE-02</td>
+            <td role="cell" data-label="Probability" class="number">3.6%</td>
+            <td role="cell" data-label="Band"><span class="band band-low">Low</span></td>
+            <td role="cell" data-label="Decision">Approve</td>
+            <td role="cell" data-label="Record"><a href="/detail.html?id=114">View<span class="visually-hidden"> SAMPLE-02</span></a></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="empty" id="history-empty" hidden>No assessments match these filters. Clear a filter, or <a href="/assess.html">start a new assessment</a>.</p>
+    </div>
+
+    <nav class="pagination" aria-label="Pages of results">
+      <p id="history-count">Page 1 of 1, 10 assessments</p>
+      <ul>
+        <li><a class="button button-secondary" id="page-prev" href="/history.html?page=1" aria-disabled="true">Previous page</a></li>
+        <li><a class="button button-secondary" id="page-next" href="/history.html?page=1" aria-disabled="true">Next page</a></li>
+      </ul>
+    </nav>
+  </main>
+  <footer class="site-footer">
+    <p>Demo trained on synthetic data. Not for real lending decisions.</p>
+  </footer>
+</body>
+</html>

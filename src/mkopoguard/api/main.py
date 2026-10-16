@@ -13,6 +13,7 @@ then open http://127.0.0.1:8000 (the app) or http://127.0.0.1:8000/docs (the API
 """
 
 import logging
+import mimetypes
 import time
 from contextlib import asynccontextmanager
 
@@ -27,6 +28,20 @@ from mkopoguard.api.settings import Settings, get_settings
 from mkopoguard.bundle import load_bundle
 
 log = logging.getLogger("mkopoguard.api")
+
+# The frontend's file types, set here rather than guessed. On Windows, Python reads file types
+# from the registry, which can be missing or wrong (.woff2 often is), and the browser is told
+# "nosniff", so it must get the right type.
+STATIC_TYPES = {
+    ".html": "text/html",
+    ".css": "text/css",
+    ".js": "text/javascript",
+    ".svg": "image/svg+xml",
+    ".woff2": "font/woff2",
+    ".txt": "text/plain",
+}
+for _ext, _kind in STATIC_TYPES.items():
+    mimetypes.add_type(_kind, _ext)
 
 
 class Health(BaseModel):

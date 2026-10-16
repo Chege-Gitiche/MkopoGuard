@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Model info | MkopoGuard</title>
+  <meta name="description" content="How the MkopoGuard model scores applicants and makes decisions.">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/assess.html">MkopoGuard</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/assess.html">New assessment</a></li>
+          <li><a href="/history.html">History</a></li>
+          <li><a href="/about.html" aria-current="page">Model info</a></li>
+        </ul>
+      </nav>
+      <div class="account">
+        <span><span class="visually-hidden">Signed in as </span><span id="account-name">Wanjiku Mwangi</span> <span class="role" id="account-role">officer</span></span>
+        <form action="/auth/logout" method="post">
+          <button class="button-quiet" type="submit">Log out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+  <main id="main">
+    <div class="page-head">
+      <h1>Model info</h1>
+      <p class="lede">What is scoring your applicants, how well it did on applicants it had never seen, and the rule that turns a score into a decision.</p>
+    </div>
+
+    <div class="notice">
+      <p>Trained and tested on synthetic data: not for real lending decisions.</p>
+    </div>
+
+    <section class="panel" aria-labelledby="facts-heading">
+      <h2 id="facts-heading">The model</h2>
+      <dl class="facts" id="model-facts">
+        <dt>Name</dt>
+        <dd>mkopoguard-champion</dd>
+        <dt>Version</dt>
+        <dd>1.1.0</dd>
+        <dt>Packaged</dt>
+        <dd>14 Oct 2026</dd>
+        <dt>Trained on</dt>
+        <dd><span class="number">15,910</span> synthetic applicants</dd>
+        <dt>Test PR-AUC</dt>
+        <dd><span class="number">0.399</span> on a locked test set it never trained on. PR-AUC measures how well the model ranks defaulters above repayers; 1.0 is perfect.</dd>
+      </dl>
+    </section>
+
+    <section class="panel" aria-labelledby="threshold-heading">
+      <h2 id="threshold-heading">When the model declines</h2>
+      <p>A loan is declined when the expected loss from default is larger than the fee it would earn. Longer loans earn more fees, so they can carry more risk.</p>
+      <div class="table-wrap">
+        <table>
+          <caption>Decline threshold by loan term</caption>
+          <thead>
+            <tr><th scope="col">Loan term</th><th scope="col" class="number">Declines at or above</th></tr>
+          </thead>
+          <tbody id="threshold-rows">
+            <tr><td>1 month</td><td class="number">7.5%</td></tr>
+            <tr><td>3 months</td><td class="number">19.6%</td></tr>
+            <tr><td>6 months</td><td class="number">32.8%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint">Assumes a fee of 7.5% a month, a funding cost of 1% a month, and that 80% of a defaulted loan is lost.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="bands-heading">
+      <h2 id="bands-heading">Risk bands</h2>
+      <p>Bands describe the size of the risk. They are separate from the decision: a 6-month loan in the high band can still be approved.</p>
+      <div class="table-wrap">
+        <table>
+          <caption>Risk bands by chance of default</caption>
+          <thead>
+            <tr><th scope="col">Band</th><th scope="col">Chance of default</th></tr>
+          </thead>
+          <tbody id="band-rows">
+            <tr><td><span class="band band-low">Low</span></td><td>Under 10%</td></tr>
+            <tr><td><span class="band band-medium">Medium</span></td><td>10% to under 20%</td></tr>
+            <tr><td><span class="band band-high">High</span></td><td>20% to under 35%</td></tr>
+            <tr><td><span class="band band-very-high">Very high</span></td><td>35% and over</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="limits-heading">
+      <h2 id="limits-heading">Known limits</h2>
+      <ul>
+        <li>Gender, country and age group are never inputs, but an audit found the model declines women and applicants aged 50 and over more often than other applicants with the same true risk.</li>
+        <li>For three inputs the model moves the score the wrong way. For example, more overdraft borrowing lowers it slightly.</li>
+        <li>The full model card in the project repository (docs/model_card.md) has the details.</li>
+      </ul>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>Demo trained on synthetic data. Not for real lending decisions.</p>
+  </footer>
+</body>
+</html>

@@ -10,13 +10,26 @@ Roles
   admin    the same, plus admin tasks (later)
   demo     the public portfolio account: can score sample applicants and read its own sample
            history, but never writes anything to the database (enforced in step 5.5)
+
+Two ways to send the login (step 6.3)
+  Bearer header   for /docs, scripts and tests: the token comes back in the JSON body and is
+                  sent as "Authorization: Bearer <token>".
+  Session cookie  for the web app: when the login request carries "X-Requested-With: fetch"
+                  (which only the app's own JavaScript sends), the token goes into an HttpOnly,
+                  SameSite=Strict cookie instead, and the body holds no token. JavaScript can't
+                  read the cookie, so a script injected into a page can't steal the login.
+  A request that changes something (POST, PUT, PATCH, DELETE) and is logged in by the cookie
+  must also carry "X-Requested-With: fetch". Another website can't add that header to a
+  request it makes the browser send, so it can't act as the officer (cross-site request
+  forgery). SameSite=Strict already stops the cookie being sent from other sites; this is a
+  second lock on the same door.
 """
 
 import logging
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -35,12 +48,33 @@ bearer = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 LOGIN_FAILED = "Incorrect email or password"
 NOT_AUTHENTICATED = "Not logged in, or the session has expired"
+NOT_FROM_APP = "Request refused: send it from the MkopoGuard app"
+SESSION_COOKIE = "mkopoguard_session"
+APP_HEADER, APP_HEADER_VALUE = "X-Requested-With", "fetch"
+SAFE_METHODS = ("GET", "HEAD", "OPTIONS")
 
 
 class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+    access_token: str | None = None  # None when the token was put in the session cookie
+    token_type: Literal["bearer", "cookie"] = "bearer"
     expires_in: int  # seconds
+
+
+def from_app(request: Request) -> bool:
+    """True if the request came from the web app's own JavaScript (js/api.js)."""
+    return request.headers.get(APP_HEADER) == APP_HEADER_VALUE
+
+
+def set_session_cookie(response: Response, token: str, settings) -> None:
+    response.set_cookie(
+        SESSION_COOKIE,
+        token,
+        max_age=settings.access_token_minutes * 60,
+        path="/",
+        httponly=True,  # JavaScript can't read it
+        samesite="strict",  # never sent with a request started by another site
+        secure=settings.environment == "production",  # HTTPS only on the live site
+    )
 
 
 class UserOut(BaseModel):
@@ -66,7 +100,14 @@ def get_current_user(
     token: Annotated[str | None, Depends(bearer)],
     session: SessionDep,
 ) -> User:
-    """The logged-in, active user, or 401. Put this on every route an officer uses."""
+    """The logged-in, active user, or 401. Put this on every route an officer uses.
+
+    The Authorization header wins; without one, the session cookie is used.
+    """
+    if not token:
+        token = request.cookies.get(SESSION_COOKIE)
+        if token and request.method not in SAFE_METHODS and not from_app(request):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail=NOT_FROM_APP)
     if not token:
         raise _unauthorized()
     secret = request.app.state.settings.secret_key.get_secret_value()
@@ -98,10 +139,15 @@ def require_roles(*roles: str):
 @router.post("/login", response_model=Token, summary="Log in", responses=openapi.LOGIN_ERRORS)
 def login(
     request: Request,
+    response: Response,
     form: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: SessionDep,
 ) -> Token:
-    """Email (in the `username` field) and password in; a short-lived access token out."""
+    """Email (in the `username` field) and password in; a short-lived access token out.
+
+    From the web app (header `X-Requested-With: fetch`) the token is set as an HttpOnly
+    session cookie instead and the body has `access_token: null, token_type: "cookie"`.
+    """
     settings = request.app.state.settings
     limiter, ip, tag = request.app.state.login_limiter, client_ip(request), email_tag(form.username)
     wait = limiter.check(ip, form.username)  # before any password work
@@ -128,7 +174,11 @@ def login(
         settings.secret_key.get_secret_value(),
         settings.access_token_minutes,
     )
-    return Token(access_token=token, expires_in=settings.access_token_minutes * 60)
+    expires_in = settings.access_token_minutes * 60
+    if from_app(request):
+        set_session_cookie(response, token, settings)
+        return Token(token_type="cookie", expires_in=expires_in)
+    return Token(access_token=token, expires_in=expires_in)
 
 
 @router.get("/me", response_model=UserOut, summary="Who am I", responses=openapi.UNAUTHORIZED)

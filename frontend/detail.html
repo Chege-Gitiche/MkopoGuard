@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Saved assessment | MkopoGuard</title>
+  <meta name="description" content="The full saved record of one past assessment.">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+  <script type="module" src="/js/ui.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/assess.html">MkopoGuard</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/assess.html">New assessment</a></li>
+          <li><a href="/history.html" aria-current="page">History</a></li>
+          <li><a href="/about.html">Model info</a></li>
+        </ul>
+      </nav>
+      <div class="account">
+        <span><span class="visually-hidden">Signed in as </span><span id="account-name">Wanjiku Mwangi</span> <span class="role" id="account-role">officer</span></span>
+        <form action="/auth/logout" method="post">
+          <button class="button-quiet" type="submit">Log out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+  <main id="main">
+    <a class="back-link" href="/history.html">Back to history</a>
+    <div class="page-head">
+      <h1>Assessment <span id="detail-id">#123</span></h1>
+      <p class="lede">Applicant <span id="detail-ref">SAMPLE-07</span>, assessed 16 Oct 2026, 10:05 by Wanjiku Mwangi</p>
+    </div>
+
+    <section class="panel" aria-labelledby="verdict-heading">
+      <h2 class="visually-hidden" id="verdict-heading">Score and decision</h2>
+      <div class="verdict">
+        <p class="probability">
+          <span class="probability-value tone-very-high" id="probability">49.1%</span>
+          <span class="probability-label">chance of default</span>
+        </p>
+        <dl class="facts">
+          <dt>Risk band</dt>
+          <dd><span class="band band-very-high" id="band">Very high</span></dd>
+          <dt>Decision</dt>
+          <dd class="decision" id="decision">Decline</dd>
+          <dt>Rule</dt>
+          <dd id="rule">Declines at <span class="number">7.5%</span> or more for a 1-month loan</dd>
+        </dl>
+        <figure class="scale">
+          <div class="scale-track" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+            <span class="scale-threshold" id="scale-threshold" data-at="7.5%"></span>
+            <span class="scale-marker" id="scale-marker" data-at="49.1%"><span class="scale-marker-label">49.1%</span></span>
+          </div>
+          <div class="scale-axis" aria-hidden="true">
+            <span>Low</span><span>Medium</span><span>High</span><span>Very high</span>
+          </div>
+          <figcaption id="scale-caption">49.1% sits in the very high band (35% and over). The dashed line is the decline threshold, 7.5%.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <div class="reasons-grid">
+      <section class="panel reasons-raise" aria-labelledby="raised-heading">
+        <h2 id="raised-heading">What raised the risk</h2>
+        <ol class="reasons" id="reasons-raising">
+          <li><span>Spends 21% of outgoing money on betting</span><span class="reason-impact">+26.3 points</span><span class="reason-strength">Major</span></li>
+          <li><span>Did not save in the past year</span><span class="reason-impact">+9.5 points</span><span class="reason-strength">Major</span></li>
+          <li><span>Not in the workforce</span><span class="reason-impact">+7.2 points</span><span class="reason-strength">Major</span></li>
+        </ol>
+      </section>
+      <section class="panel reasons-lower" aria-labelledby="lowered-heading">
+        <h2 id="lowered-heading">What lowered the risk</h2>
+        <ol class="reasons" id="reasons-lowering">
+          <li><span>Modest loan requested: KSh 2,500</span><span class="reason-impact">&minus;5.9 points</span><span class="reason-strength">Major</span></li>
+          <li><span>In the highest income group in their country</span><span class="reason-impact">&minus;4.8 points</span><span class="reason-strength">Moderate</span></li>
+        </ol>
+      </section>
+    </div>
+    <p class="other-factors" id="other-factors">Everything else together added 2.6 points.</p>
+
+    <section class="panel" aria-labelledby="answers-heading">
+      <h2 id="answers-heading">Applicant answers</h2>
+      <dl class="answers" id="answers">
+        <div><dt>Application date</dt><dd>5 May 2025</dd></div>
+        <div><dt>Loan amount</dt><dd>KSh 2,500</dd></div>
+        <div><dt>Loan term</dt><dd>1 month</dd></div>
+        <div><dt>Age</dt><dd>22</dd></div>
+        <div><dt>Income group</dt><dd>5, richest fifth</dd></div>
+        <div><dt>In the workforce</dt><dd>No</dd></div>
+        <div><dt>Education</dt><dd>Secondary</dd></div>
+        <div><dt>Saved in the past year</dt><dd>No</dd></div>
+        <div><dt>Saved in a chama</dt><dd>No</dd></div>
+        <div><dt>Borrowed in the past year</dt><dd>Yes</dd></div>
+        <div><dt>From a bank or institution</dt><dd>No</dd></div>
+        <div><dt>From family or friends</dt><dd>Yes</dd></div>
+        <div><dt>For medical bills</dt><dd>No</dd></div>
+        <div><dt>Emergency money from</dt><dd>Family or friends</dd></div>
+        <div><dt>Worried about bills</dt><dd>Very worried</dd></div>
+      </dl>
+    </section>
+
+    <section class="panel" aria-labelledby="statement-heading">
+      <h2 id="statement-heading">M-Pesa statement</h2>
+      <dl class="facts" id="statement-summary">
+        <dt>Transactions</dt>
+        <dd class="number">336</dd>
+        <dt>Covers</dt>
+        <dd>6 Nov 2024 to 4 May 2025</dd>
+      </dl>
+    </section>
+
+    <section class="panel" aria-labelledby="model-heading">
+      <h2 id="model-heading">Model</h2>
+      <p>Scored by version 1.1.0. Later versions may score the same answers differently; this record keeps the score as it was given.</p>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>Demo trained on synthetic data. Not for real lending decisions.</p>
+  </footer>
+</body>
+</html>

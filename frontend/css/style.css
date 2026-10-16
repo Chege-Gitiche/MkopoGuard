@@ -1,0 +1,1008 @@
+/* MkopoGuard: one stylesheet for every page (step 6.2).
+
+   Colours live in the variables below and nowhere else. The risk band colours were checked
+   for contrast: every text colour is at least 5.7 : 1 on its band background and 6.3 : 1 on
+   white (WCAG AA asks for 4.5 : 1). A band is never shown by colour alone: its name is always
+   written inside the tag.
+
+   Font: Atkinson Hyperlegible Next, made by the Braille Institute so that look-alike
+   characters (1 l I, 0 O, 5 S) stay distinct. That matters here: officers read references
+   like APP-2026-0042 and amounts in KSh. SIL Open Font License, see /fonts/OFL.txt. */
+
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light;
+
+  --page: #f2f4f3;
+  --surface: #ffffff;
+  --ink: #18222c;
+  --muted: #4c5864;
+  --line: #c9d1d6;
+  --line-strong: #8a96a0;
+  --primary: #1f4e79;
+  --primary-strong: #163a5a;
+  --primary-soft: #e4ecf4;
+  --error: #a1161c;
+  --error-soft: #fde2e1;
+
+  --band-low-bg: #e6f4ea;
+  --band-low-fg: #1e6b34;
+  --band-medium-bg: #fff4cc;
+  --band-medium-fg: #7a5b00;
+  --band-high-bg: #ffe5d0;
+  --band-high-fg: #9a3d00;
+  --band-very-high-bg: #fde2e1;
+  --band-very-high-fg: #a1161c;
+
+  --font: "Atkinson Hyperlegible Next", "Segoe UI", system-ui, sans-serif;
+
+  /* type scale, ratio 1.25 from 16 px */
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.5625rem;
+  --text-xl: 1.953rem;
+  --text-figure: 3.815rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  --radius: 6px;
+  --radius-small: 4px;
+  --width: 68rem;
+  --gutter: var(--space-4);
+}
+
+/* --- base ------------------------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--gutter) var(--space-7);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--space-3);
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: var(--text-xl);
+}
+
+h2 {
+  font-size: var(--text-md);
+}
+
+h3 {
+  font-size: var(--text-base);
+}
+
+p {
+  margin: 0 0 var(--space-4);
+  max-width: 70ch;
+}
+
+a {
+  color: var(--primary);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  color: var(--primary-strong);
+}
+
+/* one focus style everywhere: thick, offset, and never removed */
+:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.number {
+  font-variant-numeric: tabular-nums;
+}
+
+.lede {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+
+.page-head {
+  margin-bottom: var(--space-6);
+}
+
+.page-head p:last-child {
+  margin-bottom: 0;
+}
+
+/* --- skip link, header, footer ------------------------------------------------------------- */
+
+.skip-link {
+  position: absolute;
+  left: var(--gutter);
+  top: -4rem;
+  z-index: 10;
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+}
+
+.skip-link:focus {
+  top: var(--space-2);
+}
+
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.site-header-inner {
+  max-width: var(--width);
+  margin: 0 auto;
+  padding: var(--space-3) var(--gutter);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-6);
+}
+
+.brand {
+  font-size: var(--text-md);
+  font-weight: 800;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.brand:hover {
+  color: var(--primary);
+}
+
+.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-nav a {
+  display: inline-block;
+  padding: var(--space-2) 0;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+}
+
+.site-nav a:hover {
+  border-bottom-color: var(--line-strong);
+}
+
+.site-nav a[aria-current="page"] {
+  font-weight: 700;
+  border-bottom-color: var(--primary);
+}
+
+.account {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.account form {
+  margin: 0;
+}
+
+.role {
+  padding: 0 var(--space-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-small);
+  color: var(--muted);
+}
+
+.site-footer {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.site-footer p {
+  max-width: var(--width);
+  margin: 0 auto;
+  padding: var(--space-4) var(--gutter);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+/* --- notices --------------------------------------------------------------------------------- */
+
+.notice {
+  max-width: none;
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--primary);
+  background: var(--primary-soft);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.notice-error {
+  border-left-color: var(--error);
+  background: var(--error-soft);
+}
+
+.notice > :last-child {
+  margin-bottom: 0;
+}
+
+.notice ul {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}
+
+/* --- panels ---------------------------------------------------------------------------------- */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.panel > :last-child {
+  margin-bottom: 0;
+}
+
+/* --- buttons ---------------------------------------------------------------------------------- */
+
+.button,
+button {
+  font: inherit;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-5);
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--primary-strong);
+  border-color: var(--primary-strong);
+  color: #ffffff;
+}
+
+.button-secondary {
+  background: var(--surface);
+  color: var(--primary);
+}
+
+.button-secondary:hover {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.button-quiet {
+  min-height: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.button-quiet:hover {
+  border-color: var(--ink);
+}
+
+.button[disabled],
+.button[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+/* --- forms ----------------------------------------------------------------------------------- */
+
+fieldset {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+
+legend {
+  padding: 0 var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-5) var(--space-6);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.field-wide {
+  grid-column: 1 / -1;
+}
+
+.field label,
+.choice-group legend {
+  font-weight: 700;
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.field-error {
+  margin: 0;
+  color: var(--error);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-small);
+}
+
+input:hover,
+select:hover {
+  border-color: var(--ink);
+}
+
+input[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border: 2px solid var(--error);
+}
+
+input[type="file"] {
+  font: inherit;
+  max-width: 100%;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  font: inherit;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* yes / no / not asked: radio buttons in a small fieldset of their own */
+.choice-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.choice-group legend {
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  font-size: var(--text-base);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+
+.choice,
+.field .choice {
+  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+}
+
+.choice input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+/* a follow-up question that only applies after "Yes" */
+.follow-up {
+  margin: var(--space-4) 0 0;
+  padding: 0 0 0 var(--space-4);
+  background: none;
+  border: 0;
+  border-left: 3px solid var(--line);
+  border-radius: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.follow-up:disabled {
+  color: var(--muted);
+}
+
+.sample-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--primary-soft);
+  border-radius: var(--radius);
+}
+
+.sample-bar .field {
+  flex: 1 1 16rem;
+}
+
+/* --- risk bands ------------------------------------------------------------------------------ */
+
+.band {
+  display: inline-block;
+  padding: 0.0625rem var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-small);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.band-low {
+  background: var(--band-low-bg);
+  color: var(--band-low-fg);
+}
+
+.band-medium {
+  background: var(--band-medium-bg);
+  color: var(--band-medium-fg);
+}
+
+.band-high {
+  background: var(--band-high-bg);
+  color: var(--band-high-fg);
+}
+
+.band-very-high {
+  background: var(--band-very-high-bg);
+  color: var(--band-very-high-fg);
+}
+
+/* --- the verdict: probability, band, decision and where they sit on the scale ---------------- */
+
+.verdict {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: var(--space-5) var(--space-7);
+  align-items: start;
+}
+
+.probability {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.probability-value {
+  font-size: var(--text-figure);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.probability-label {
+  color: var(--muted);
+}
+
+.tone-low {
+  color: var(--band-low-fg);
+}
+
+.tone-medium {
+  color: var(--band-medium-fg);
+}
+
+.tone-high {
+  color: var(--band-high-fg);
+}
+
+.tone-very-high {
+  color: var(--band-very-high-fg);
+}
+
+.decision {
+  font-size: var(--text-lg);
+  font-weight: 800;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+/* The scale runs 0-100 %. Each band's share of the track is fixed (10, 10, 15, 65); the
+   marker and threshold positions come from --at, set per page (later by JavaScript). */
+.scale {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.scale-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: 10fr 10fr 15fr 65fr;
+  height: 1rem;
+  margin: 2.25rem 0 var(--space-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-small);
+}
+
+.scale-track > span:nth-child(1) {
+  background: var(--band-low-bg);
+}
+
+.scale-track > span:nth-child(2) {
+  background: var(--band-medium-bg);
+}
+
+.scale-track > span:nth-child(3) {
+  background: var(--band-high-bg);
+}
+
+.scale-track > span:nth-child(4) {
+  background: var(--band-very-high-bg);
+}
+
+.scale-track > span + span {
+  border-left: 1px solid var(--line-strong);
+}
+
+.scale-marker,
+.scale-threshold {
+  position: absolute;
+  left: var(--at, 0%);
+  transform: translateX(-50%);
+}
+
+.scale-marker {
+  top: -0.5rem;
+  width: 4px;
+  height: calc(100% + 1rem);
+  background: var(--ink);
+  border-radius: 2px;
+}
+
+.scale-marker-label {
+  position: absolute;
+  bottom: calc(100% + 0.25rem);
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 800;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.scale-threshold {
+  top: -0.375rem;
+  height: calc(100% + 0.75rem);
+  border-left: 2px dashed var(--ink);
+}
+
+.scale-axis {
+  display: grid;
+  grid-template-columns: 10fr 10fr 15fr 65fr;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.scale figcaption,
+.scale-caption {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* --- reasons ---------------------------------------------------------------------------------- */
+
+.reasons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--space-5);
+}
+
+.reasons-grid .panel {
+  margin-bottom: 0;
+}
+
+.reasons {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reasons li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--line);
+}
+
+.reasons li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.reason-impact {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.reason-strength {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.reasons-raise .reason-impact {
+  color: var(--band-very-high-fg);
+}
+
+.reasons-lower .reason-impact {
+  color: var(--band-low-fg);
+}
+
+.other-factors {
+  margin: var(--space-4) 0 var(--space-5);
+  color: var(--muted);
+}
+
+/* --- tables ----------------------------------------------------------------------------------- */
+
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-5);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+caption {
+  padding: var(--space-4) var(--space-4) 0;
+  text-align: left;
+  font-weight: 700;
+}
+
+th,
+td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+
+thead th {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-weight: 700;
+  border-bottom: 2px solid var(--line-strong);
+}
+
+tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+td.number,
+th.number {
+  text-align: right;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.filters .field {
+  flex: 1 1 10rem;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.pagination p {
+  margin: 0;
+}
+
+.pagination ul {
+  display: flex;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--muted);
+}
+
+/* --- answers (prediction detail) ------------------------------------------------------------- */
+
+.answers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--space-4) var(--space-6);
+  margin: 0;
+}
+
+.answers div {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-2);
+}
+
+.answers dt {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.answers dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+}
+
+/* --- login ------------------------------------------------------------------------------------ */
+
+.login {
+  max-width: 26rem;
+  margin: 0 auto;
+}
+
+.login form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.login .button {
+  width: 100%;
+}
+
+/* --- small screens (down to 360 px) ----------------------------------------------------------- */
+
+@media (max-width: 40rem) {
+  :root {
+    --text-xl: 1.5625rem;
+    --text-figure: 3rem;
+  }
+
+  main {
+    padding-top: var(--space-5);
+  }
+
+  .account {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .verdict {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+
+  fieldset,
+  .panel {
+    padding: var(--space-4);
+  }
+
+  .reasons-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* too narrow for four band names under the scale; the caption says the same in words */
+  .scale-axis {
+    display: none;
+  }
+
+  /* History: each row becomes a card. The roles in the HTML keep it a table for screen
+     readers even though it no longer looks like one. */
+  .responsive-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .responsive-table tbody tr {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--space-1) var(--space-4);
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .responsive-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .responsive-table td {
+    display: contents;
+  }
+
+  .responsive-table td > * {
+    justify-self: start;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+  }
+
+  .responsive-table td.number {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .site-header,
+  .skip-link,
+  .actions,
+  .filters {
+    display: none;
+  }
+
+  body {
+    background: #ffffff;
+  }
+}

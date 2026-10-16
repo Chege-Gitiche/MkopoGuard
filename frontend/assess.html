@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New assessment | MkopoGuard</title>
+  <meta name="description" content="Score a microloan applicant.">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/assess.html">MkopoGuard</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="/assess.html" aria-current="page">New assessment</a></li>
+          <li><a href="/history.html">History</a></li>
+          <li><a href="/about.html">Model info</a></li>
+        </ul>
+      </nav>
+      <div class="account">
+        <span><span class="visually-hidden">Signed in as </span><span id="account-name">Wanjiku Mwangi</span> <span class="role" id="account-role">officer</span></span>
+        <form action="/auth/logout" method="post">
+          <button class="button-quiet" type="submit">Log out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+  <main id="main">
+    <p class="notice" id="demo-notice" hidden>Demo account: assessments are not saved and your history stays empty.</p>
+    <div class="page-head">
+      <h1>New assessment</h1>
+      <p>Answer what you know about the applicant. Questions marked "Not asked" can be left that way.</p>
+    </div>
+
+    <form class="sample-bar" id="sample-form" aria-label="Load a sample applicant">
+      <div class="field">
+        <label for="sample">Sample applicant</label>
+        <select id="sample" name="sample">
+            <option value="sample_01_low">Sample 01, low risk</option>
+            <option value="sample_02_low">Sample 02, low risk</option>
+            <option value="sample_03_medium">Sample 03, medium risk</option>
+            <option value="sample_04_medium">Sample 04, medium risk</option>
+            <option value="sample_05_high">Sample 05, high risk</option>
+            <option value="sample_06_high">Sample 06, high risk</option>
+            <option value="sample_07_very_high">Sample 07, very high risk</option>
+            <option value="sample_08_very_high">Sample 08, very high risk</option>
+            <option value="sample_09_thin_file">Sample 09, no statement</option>
+            <option value="sample_10_thin_file">Sample 10, no statement</option>
+        </select>
+      </div>
+      <button class="button button-secondary" type="submit">Load sample</button>
+    </form>
+
+    <div class="notice notice-error" id="form-errors" role="alert" tabindex="-1" hidden>
+      <h2>Fix these before assessing</h2>
+      <ul id="form-error-list"></ul>
+    </div>
+
+    <form id="assess-form" action="/predict" method="post" enctype="multipart/form-data" novalidate>
+      <fieldset>
+        <legend>Application</legend>
+        <div class="fields">
+          <div class="field">
+            <label for="applicant_ref">Applicant reference</label>
+            <p class="hint" id="applicant_ref-hint">Your own reference, for example APP-2026-0042. No names, phone or ID numbers.</p>
+            <input id="applicant_ref" name="applicant_ref" type="text" autocomplete="off" spellcheck="false" maxlength="40" required aria-describedby="applicant_ref-hint">
+          </div>
+          <div class="field">
+            <label for="application_date">Application date</label>
+            <input id="application_date" name="application_date" type="date" required>
+          </div>
+          <div class="field">
+            <label for="loan_amount_kes">Loan amount (KSh)</label>
+            <p class="hint" id="loan_amount_kes-hint">From 1,000 to 100,000</p>
+            <input id="loan_amount_kes" name="loan_amount_kes" type="number" inputmode="numeric" min="1000" max="100000" step="1" required aria-describedby="loan_amount_kes-hint">
+          </div>
+          <fieldset class="choice-group">
+            <legend>Loan term (months)</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="term_months" value="1" required> 1</label>
+              <label class="choice"><input type="radio" name="term_months" value="3" required> 3</label>
+              <label class="choice"><input type="radio" name="term_months" value="6" required> 6</label>
+            </div>
+          </fieldset>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>About the applicant</legend>
+        <div class="fields">
+          <div class="field">
+            <label for="age">Age</label>
+            <p class="hint" id="age-hint">From 18 to 100</p>
+            <input id="age" name="age" type="number" inputmode="numeric" min="18" max="100" step="1" required aria-describedby="age-hint">
+          </div>
+          <div class="field">
+            <label for="income_quintile">Income group</label>
+            <p class="hint" id="income_quintile-hint">Compared with others in the same country</p>
+            <select id="income_quintile" name="income_quintile" aria-describedby="income_quintile-hint" required>
+              <option value="">Choose a group</option>
+              <option value="1">1, poorest fifth</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5, richest fifth</option>
+            </select>
+          </div>
+          <fieldset class="choice-group">
+            <legend>In the workforce</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="in_workforce" value="true" required> Yes</label>
+              <label class="choice"><input type="radio" name="in_workforce" value="false" required> No</label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="education_level">Education</label>
+            <select id="education_level" name="education_level">
+              <option value="">Not asked</option>
+              <option value="primary_or_less">Primary or less</option>
+              <option value="secondary">Secondary</option>
+              <option value="tertiary">Tertiary</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Savings and borrowing</legend>
+        <div class="fields">
+          <div class="field">
+          <fieldset class="choice-group">
+            <legend>Saved any money in the past year</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="saved_past_year" value="true" required> Yes</label>
+              <label class="choice"><input type="radio" name="saved_past_year" value="false" required> No</label>
+            </div>
+          </fieldset>
+            <fieldset class="follow-up" id="savings-follow-up">
+              <legend class="visually-hidden">If they saved</legend>
+          <fieldset class="choice-group">
+            <legend>Saved in a chama or savings group</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="saved_in_savings_club" value="true"> Yes</label>
+              <label class="choice"><input type="radio" name="saved_in_savings_club" value="false"> No</label>
+              <label class="choice"><input type="radio" name="saved_in_savings_club" value=""> Not asked</label>
+            </div>
+          </fieldset>
+            </fieldset>
+          </div>
+          <div class="field">
+          <fieldset class="choice-group">
+            <legend>Borrowed any money in the past year</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="borrowed_past_year" value="true" required> Yes</label>
+              <label class="choice"><input type="radio" name="borrowed_past_year" value="false" required> No</label>
+            </div>
+          </fieldset>
+            <fieldset class="follow-up" id="borrowing-follow-up">
+              <legend class="visually-hidden">If they borrowed</legend>
+          <fieldset class="choice-group">
+            <legend>From a bank or other financial institution</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="borrowed_from_fin_institution" value="true"> Yes</label>
+              <label class="choice"><input type="radio" name="borrowed_from_fin_institution" value="false"> No</label>
+              <label class="choice"><input type="radio" name="borrowed_from_fin_institution" value=""> Not asked</label>
+            </div>
+          </fieldset>
+          <fieldset class="choice-group">
+            <legend>From family or friends</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="borrowed_from_family_friends" value="true"> Yes</label>
+              <label class="choice"><input type="radio" name="borrowed_from_family_friends" value="false"> No</label>
+              <label class="choice"><input type="radio" name="borrowed_from_family_friends" value=""> Not asked</label>
+            </div>
+          </fieldset>
+          <fieldset class="choice-group">
+            <legend>For medical bills</legend>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="borrowed_for_medical" value="true"> Yes</label>
+              <label class="choice"><input type="radio" name="borrowed_for_medical" value="false"> No</label>
+              <label class="choice"><input type="radio" name="borrowed_for_medical" value=""> Not asked</label>
+            </div>
+          </fieldset>
+            </fieldset>
+          </div>
+          <div class="field">
+            <label for="emergency_fund_source">In an emergency, money would come from</label>
+            <select id="emergency_fund_source" name="emergency_fund_source">
+              <option value="">Not asked</option>
+              <option value="savings">Savings</option>
+              <option value="work">Work</option>
+              <option value="family_friends">Family or friends</option>
+              <option value="borrowing">Borrowing</option>
+              <option value="selling_assets">Selling assets</option>
+              <option value="other">Somewhere else</option>
+              <option value="could_not">Could not raise it</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="worried_about_bills">Worried about paying bills</label>
+            <select id="worried_about_bills" name="worried_about_bills">
+              <option value="">Not asked</option>
+              <option value="very">Very worried</option>
+              <option value="somewhat">Somewhat worried</option>
+              <option value="not_at_all">Not worried</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>M-Pesa statement</legend>
+        <div class="fields">
+          <div class="field field-wide">
+            <label for="statement">Statement file (optional)</label>
+            <p class="hint" id="statement-hint">A CSV with the columns timestamp, type, direction, amount_kes and balance_after. At most 1 MB, covering at least 150 days. Without a statement the applicant is scored on their answers only.</p>
+            <input id="statement" name="statement" type="file" accept=".csv,text/csv" aria-describedby="statement-hint">
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button class="button" type="submit" id="assess-button">Assess risk</button>
+        <button class="button button-secondary" type="reset">Clear form</button>
+      </div>
+      <p class="hint" id="assess-status" role="status" aria-live="polite"></p>
+    </form>
+  </main>
+  <footer class="site-footer">
+    <p>Demo trained on synthetic data. Not for real lending decisions.</p>
+  </footer>
+</body>
+</html>

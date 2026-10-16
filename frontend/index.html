@@ -3,31 +3,44 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MkopoGuard</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem;
-           color: #0b0b0b; background: #fcfcfb; line-height: 1.5; }
-    .status { padding: 0.75rem 1rem; border-radius: 0.5rem; background: #eef4fb; }
-  </style>
+  <title>Sign in | MkopoGuard</title>
+  <meta name="description" content="Sign in to MkopoGuard, microloan default risk scoring for loan officers.">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <main>
-    <h1>MkopoGuard</h1>
-    <p>Microloan default risk scoring for loan officers. The full app arrives in Phase 6.</p>
-    <p class="status" id="status" role="status" aria-live="polite">Checking the server…</p>
-    <p><a href="/docs">API documentation</a></p>
-    <p><small>Synthetic data only: not for real lending decisions.</small></p>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/">MkopoGuard</a>
+    </div>
+  </header>
+  <main id="main">
+    <div class="login">
+      <div class="page-head">
+        <h1>Sign in</h1>
+        <p>Score microloan applicants and see the reasons behind each score.</p>
+      </div>
+      <div class="notice notice-error" id="login-error" role="alert" hidden>
+        <p id="login-error-text">Incorrect email or password</p>
+      </div>
+      <form class="panel" id="login-form" action="/auth/login" method="post">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="username" type="email" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="button" type="submit">Sign in</button>
+      </form>
+      <p class="hint">Just looking? Sign in with the demo account shown on the project page. It can score applicants but saves nothing.</p>
+    </div>
   </main>
-  <script>
-    fetch("/health")
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((h) => {
-        document.getElementById("status").textContent =
-          `Server is up: model ${h.model_name} v${h.model_version}.`;
-      })
-      .catch(() => {
-        document.getElementById("status").textContent = "The server isn't responding yet.";
-      });
-  </script>
+  <footer class="site-footer">
+    <p>Demo trained on synthetic data. Not for real lending decisions.</p>
+  </footer>
 </body>
 </html>
