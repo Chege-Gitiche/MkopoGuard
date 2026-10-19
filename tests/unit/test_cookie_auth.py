@@ -138,6 +138,30 @@ def test_logout_is_never_cached(client):
     assert client.post("/auth/logout").headers["cache-control"] == "no-store"
 
 
+# --- the quiet session check (step 6.7) ------------------------------------------------------
+
+
+def test_session_check_never_401s(client):
+    """The login page asks this; a signed-out visitor is an answer, not an error."""
+    response = client.get("/auth/session")
+    assert response.status_code == 200 and response.json() == {"user": None}
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_session_check_names_the_signed_in_officer(client):
+    app_login(client)
+    user = client.get("/auth/session").json()["user"]
+    assert user["email"] == EMAIL and "hashed_password" not in user
+
+
+def test_session_check_treats_a_bad_login_as_signed_out(client):
+    client.cookies.set(SESSION_COOKIE, "not-a-real-token")
+    assert client.get("/auth/session").json() == {"user": None}
+    client.cookies.clear()
+    headers = {"Authorization": "Bearer not-a-real-token"}
+    assert client.get("/auth/session", headers=headers).json() == {"user": None}
+
+
 # --- the cross-site request forgery guard ------------------------------------------------------
 
 

@@ -133,7 +133,8 @@ a:hover {
 }
 
 /* one focus style everywhere: thick, offset, and never removed */
-:focus-visible {
+:focus-visible,
+input[type="date"]:focus-within {
   outline: 3px solid var(--primary);
   outline-offset: 2px;
 }
@@ -397,7 +398,7 @@ legend {
 
 .fields {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
   gap: var(--space-5) var(--space-6);
 }
 
@@ -726,7 +727,7 @@ input[type="file"]::file-selector-button {
 
 .reasons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
   gap: var(--space-5);
 }
 
@@ -867,7 +868,7 @@ th.number {
 
 .answers {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
   gap: var(--space-4) var(--space-6);
   margin: 0;
 }
@@ -986,6 +987,28 @@ th.number {
 
   .responsive-table td.number {
     text-align: left;
+  }
+}
+
+@media (forced-colors: active) {
+  .band,
+  .role,
+  .scale-track,
+  .scale-track > span + span {
+    border-color: CanvasText;
+  }
+
+  .scale-marker {
+    background: CanvasText;
+    forced-color-adjust: none;
+  }
+
+  .scale-marker-label {
+    color: CanvasText;
+  }
+
+  .scale-threshold {
+    border-left-color: CanvasText;
   }
 }
 

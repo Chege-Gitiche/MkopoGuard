@@ -31,7 +31,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from mkopoguard.api import openapi, security
@@ -190,6 +190,26 @@ def login(
         set_session_cookie(response, token, settings)
         return Token(token_type="cookie", expires_in=expires_in)
     return Token(access_token=token, expires_in=expires_in)
+
+
+class SessionOut(BaseModel):
+    user: UserOut | None = Field(description="The signed-in user, or null")
+
+
+@router.get("/session", response_model=SessionOut, summary="Am I signed in")
+def current_session(request: Request, session: SessionDep) -> SessionOut:
+    """Who is signed in, or `{"user": null}`. Never 401, so the login page can check quietly.
+
+    (The login page used to ask /auth/me, whose 401 for a signed-out visitor is a correct
+    answer that browsers still report as a console error.)
+    """
+    scheme, _, header_token = request.headers.get("Authorization", "").partition(" ")
+    token = header_token if scheme.lower() == "bearer" and header_token else None
+    try:
+        user = get_current_user(request, token, session)
+    except HTTPException:
+        return SessionOut(user=None)
+    return SessionOut(user=UserOut.model_validate(user))
 
 
 @router.get("/me", response_model=UserOut, summary="Who am I", responses=openapi.UNAUTHORIZED)

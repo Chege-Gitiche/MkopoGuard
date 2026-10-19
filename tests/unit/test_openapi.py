@@ -16,7 +16,12 @@ from mkopoguard.api.users import create_user
 SECRET = "test-secret-key-that-is-long-enough-1234567890"
 PASSWORD = "correct horse battery staple"
 SAMPLES = config.PROJECT_ROOT / "samples"
-PUBLIC = {("get", "/health"), ("post", "/auth/login"), ("post", "/auth/logout")}
+PUBLIC = {
+    ("get", "/health"),
+    ("post", "/auth/login"),
+    ("post", "/auth/logout"),
+    ("get", "/auth/session"),
+}
 pytestmark = pytest.mark.skipif(
     not (SAMPLES / "manifest.json").exists(), reason="samples not made yet (step 5.4)"
 )

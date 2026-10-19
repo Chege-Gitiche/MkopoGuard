@@ -563,3 +563,37 @@ def test_detail_page_has_words_for_every_choice_the_api_accepts():
 def test_the_back_link_can_only_return_to_a_history_page():
     pattern = re.search(r"return (/\^.*?\$/)\.test\(address\)", js("store.js")).group(1)
     assert pattern.startswith(r"/^\/history\.html")
+
+
+# --- accessibility pass (step 6.7) ---------------------------------------------------------------
+
+
+def css() -> str:
+    return (FRONTEND / "css/style.css").read_text(encoding="utf-8")
+
+
+def test_focus_is_always_visible():
+    text = css()
+    rule = re.search(r":focus-visible,\s*input\[type=\"date\"\]:focus-within\s*\{([^}]*)\}", text)
+    assert rule, "date boxes need :focus-within (Chrome focuses the parts inside them)"
+    width = re.search(r"outline:\s*(\d+)px solid", rule.group(1))
+    assert width and int(width.group(1)) >= 2
+    assert not re.search(r"outline:\s*(none|0)\b", text), "never remove the focus outline"
+
+
+def test_grids_never_need_more_room_than_the_screen():
+    """At 400% zoom a laptop screen is 320 px wide: no column may demand more."""
+    for minimum in re.findall(r"minmax\(([^,]+),", css()):
+        assert minimum.startswith("min(") or minimum.strip() in ("0", "max-content"), minimum
+
+
+def test_high_contrast_and_reduced_motion_are_handled():
+    text = css()
+    assert "@media (forced-colors: active)" in text
+    assert "@media (prefers-reduced-motion: reduce)" in text
+
+
+def test_the_login_page_checks_the_session_without_a_401():
+    text = js("api.js")
+    current = re.search(r"async currentUser\(\) \{(.*?)\n  \},", text, re.S).group(1)
+    assert '"/auth/session"' in current and "/auth/me" not in current

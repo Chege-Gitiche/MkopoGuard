@@ -163,12 +163,8 @@ export const api = {
 
   /** The logged-in officer, or null if nobody is signed in (no redirect: for the login page). */
   async currentUser() {
-    try {
-      return await request("/auth/me", { loginOn401: false });
-    } catch (error) {
-      if (error.status === 401) return null;
-      throw error;
-    }
+    const { user } = await request("/auth/session", { loginOn401: false });
+    return user;
   },
 
   /** Score an applicant. profile is a plain object; statement is a File or null. */
