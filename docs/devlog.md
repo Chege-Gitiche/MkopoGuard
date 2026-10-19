@@ -1024,3 +1024,147 @@ Investigating showed that in the simulator itself, more borrowings among overdra
 **Decisions:** A saved assessment opens at `result.html?id=N`. Demo results aren't saved, so the result travels in the tab's session storage, tied to the user's ID, gone when the tab closes, and wiped on log out. The samples are public because they are made-up people already in the public repository; a test checks nothing outside that folder can be reached.
 
 **Next:** Step 6.6, History and the saved-record page: the live table with band, decision, reference and date filters, paging and an empty state, and `detail.html?id=N` showing a full saved assessment with all of the applicant's answers.
+
+## 2026-10-19 · Step 6.6 — History and saved-assessment pages
+
+**Goal:** Let an officer find past assessments and open any one of them in full.
+
+**Did:**
+- History page: 20 rows a page, newest first, with filters for band, decision, reference and date range.
+- Paging: Previous and Next links. A page past the end (an old bookmark, say) moves to the last page.
+- Empty states: different messages for a new officer, a filter with no matches, and the demo account.
+- Saved-assessment page: score, band, decision and reasons, all 15 answers in words, a summary of the statement, and the model version.
+- `detail.js` has words for every choice the API accepts, and a test keeps the two in step.
+- Back link: returns to the exact History page and filters you came from.
+- +10 tests.
+
+**Broke / learned:**
+- The back link failed because our `Referrer-Policy: no-referrer` sends no referrer, so the page couldn't tell where it came from. Fixed by saving the last History address in sessionStorage (`rememberHistory` / `lastHistory`). Only `/history.html` addresses are accepted, so the link can't be pointed anywhere else.
+- One patch block had doubled backslashes and 3 tests failed. Re-applied it with a raw-string block. Lesson: check pasted code exactly as it will run, not as it looks.
+
+**Decisions:**
+- Someone else's assessment and one that doesn't exist get the same "not found" message, so the page reveals nothing.
+- Dates are shown in Kenyan time and stored in UTC.
+
+## 2026-10-19 · Step 6.7 — Accessibility pass
+
+**Goal:** Lighthouse accessibility 90 or more on every screen, full keyboard use, visible focus, contrast checked, and the band never shown by colour alone.
+
+**Did:**
+- Lighthouse scored 100 on all six screens, phone and desktop. axe was clean, including the form with errors showing and the empty History.
+- Keyboard tour of every page, recorded in `docs/accessibility.md`. A full assessment done keyboard-only.
+- Pages checked at 320 px wide and in Windows high-contrast mode.
+- +7 tests: focus always visible, grids never wider than the screen, high contrast and reduced motion handled, login page checks the session without a 401.
+
+**Broke / learned:** Four problems found and fixed.
+- Date boxes showed no focus outline. Chrome focuses the day, month and year parts inside the box, so the box itself never matches `:focus-visible`. Fixed with `:focus-within`.
+- The saved-assessment answers were 1 px too wide at 320 px. Every grid now uses `min(18rem, 100%)`.
+- High-contrast mode hid the score marker's label. Tags, the scale and the marker now keep visible edges.
+- The login page logged a console error for every signed-out visitor, because its "am I signed in?" check got a 401 from `/auth/me`. Added `GET /auth/session`, which answers `{"user": null}` instead. Best practices went from 96 to 100.
+
+**Decisions:** Lighthouse stays a manual check before each release. axe is to be automated in Phase 7.
+
+## 2026-10-19 · Step 6.8 — Disclaimer
+
+**Goal:** "Demo trained on synthetic data. Not for real lending decisions." visible everywhere a decision appears.
+
+**Did:**
+- The disclaimer is in every page footer.
+- It is also inside the score panel on Result and saved assessments, so a screenshot of a decision always carries it.
+- It is kept when a result is printed.
+- +10 tests: never hidden, prints, and travels with the decision.
+
+**Broke / learned:** A footer alone isn't enough. A cropped screenshot of the score would lose it, so the decision carries its own copy.
+
+**Decisions:** One exact sentence, the same everywhere, and a test fails if any page changes it.
+
+## 2026-10-19 · Step 7.1 — Test strategy
+
+**Goal:** One page saying what is tested, how, where, and when a release is good enough.
+
+**Did:** Wrote `docs/test_strategy.md`, covering:
+- scope, and a risk-based approach that tests hardest where a failure would hurt an applicant or leak data;
+- eight test layers, each with its tool, folder and when it runs;
+- environments (local, CI, live);
+- entry and exit criteria;
+- what is out of scope;
+- risks accepted for v1 (fairness gaps, three behaviour flips, logout without server-side tokens);
+- a defect severity scale, S1 to S4.
+
+**Broke / learned:** Writing exit criteria forced numbers I hadn't fixed yet. A criterion without a number can't fail, so it isn't one.
+
+**Decisions:**
+- Coverage 80% or more.
+- Test PR-AUC 0.35 or more (random scores about 0.20). ECE 0.03 or less.
+- `/predict` p95 under 500 ms locally and under 1.5 s live, at 10 users.
+- No open S1 or S2 defects.
+- Lighthouse 90 or more, with no serious axe violations.
+
+## 2026-10-19 · Step 7.2 — Requirements and traceability
+
+**Goal:** Number every requirement and prove each one with named tests.
+
+**Did:**
+- `docs/test_plan.md` v1.0: 43 requirements (FR-01 to FR-25, NFR-01 to NFR-18) and a traceability matrix linking each one to its tests.
+- `scripts/check_traceability.py` reads the plan and checks it against the test files: every named test must exist, and every requirement must have a test or a planned gap.
+- Two planned gaps: FR-23 (browser journey) and NFR-16 (load test), both for step 7.4.
+- Model quality gates as tests: PR-AUC floor 0.35, ECE 0.03 or less, and a check that the floor sits below the model's measured confidence interval.
+- +13 tests.
+
+**Broke / learned:** A matrix nobody checks goes stale the first time a test is renamed. Checking it with code makes the paper trail trustworthy.
+
+**Decisions:**
+- The checker reads test names from the code itself (AST), not from a pytest run, so it is fast and runs in the normal suite.
+- A gap is allowed only if it names the step that will close it.
+
+## 2026-10-19 · Step 7.3 — Test cases, boundaries and injection
+
+**Goal:** Written test cases (ID, requirement, steps, data, expected result) covering happy paths, boundaries and failures.
+
+**Did:**
+- 74 test cases (25 happy, 17 boundary, 32 negative): 70 automated and 4 planned for 7.4. Plan v1.1.
+- `test_boundaries.py` (28) tests both sides of every limit: age 17/18/100/101, loan, income group, term, reference length, application date, a statement of exactly 1 MB and one byte more, row counts, 150-day coverage, 60-day recency.
+- `test_injection.py` (20): SQL in the email, the password and the History filter gets 401 or an empty list, never a 500. Markup can't be an applicant reference, and a refused value is never echoed back.
+- New requirement NFR-19: input never runs as code.
+- The checker now also checks test cases: a real requirement, tests that exist, numbering in order, a valid type, and at least one case for every requirement.
+- +59 tests.
+
+**Broke / learned:**
+- Writing the cases exposed that the limits were only tested from the failing side (17 refused, but nothing proved 18 accepted).
+- The injection tests tripped the login rate limit, so the password attacks use a separate account.
+- Several case descriptions didn't match what their tests actually do. I corrected each against its test (row 22, `bribe` rows, the midnight case).
+
+**Decisions:** Every number in a test case comes from the test that runs it, never from memory.
+
+## 2026-10-19 · Step 7.4 — Automating every test layer
+
+**Goal:** Automate the remaining layers in their own folders: browser journeys, axe, Hypothesis property tests and a load test.
+
+**Did:**
+- Split the tests into `tests/unit`, `data`, `model`, `api`, `security` and `e2e`. The checker flagged every moved test until the plan's paths were updated.
+- `local_server.py` starts a throwaway copy of the app on a temporary database with a random password, for the browser and load tests.
+- Playwright (9 tests): the full journey (login, assess sample 07, result, History, saved record, logout), return to the page asked for after login, wrong password, browser form checks, and the server's statement error.
+- axe on every screen, signed out and signed in. I injected two faults to prove it catches them.
+- Hypothesis on the features, the statement reader and the shipped model:
+  - no missing features when there is any income;
+  - shares between 0 and 1;
+  - row order doesn't matter;
+  - late transactions change nothing;
+  - same income every month gives volatility 0;
+  - any valid applicant gets a consistent result with 3 + 2 reasons.
+- Locust: 10 users for 2 minutes. The saved result is checked by a gate test tied to the model version.
+- Plan v1.2: 78 test cases, no gaps left, and the checker passes `--strict`.
+- +21 tests in the plain run, plus 9 browser tests (`pytest -m e2e`).
+
+**Broke / learned:**
+- **Hypothesis found a real bug (BUG-001):** a statement with a bare carriage return (Excel for Mac's "CSV (Macintosh)") crashed the reader with a 500. It is now read normally, and other stray `\r` characters get a proper 422. Regression tests fail before the fix and pass after.
+- It also showed that two transactions in the same second make the closing balance depend on file order. Not a bug: the reader only accepts files whose balances add up in file order. That rule is now pinned by a test.
+- My first reasons property was wrong. The "raising" list can hold a reason that lowers risk when few things push the score up. The real rule is ranking, and the test now checks that.
+- Playwright: "Sample applicant" matched both the select and its form's label, so labels now use `exact=True`. The empty form shows 9 errors, not 8. History correctly moves page 2 to page 1 when there is only one page.
+- Load test on my laptop: p95 ___ ms, ___ (PASSED/FAILED).
+
+**Decisions:**
+- Browser tests are left out of a plain `pytest` and run with `-m e2e`, which CI will run on pull requests.
+- The load test uses 1 to 2 seconds between assessments, far busier than real officers. A new model version needs a fresh load test.
+
+**Next:** Step 7.5: GitHub Actions with an 80% coverage gate, and browser tests on pull requests to `main`.
