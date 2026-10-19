@@ -80,6 +80,10 @@ field) and the "Assessing..." state is announced through a status line.
 
 ## Re-checking
 
+axe runs automatically (step 7.4) on every screen, signed out and signed in, including the
+form with its errors showing: `python -m pytest -m e2e` (`tests/e2e/test_accessibility.py`).
+Any serious or critical violation fails the test. Lighthouse is still run by hand:
+
 Lighthouse in Chrome: open a page, press F12, choose **Lighthouse**, tick only
 **Accessibility**, pick **Mobile** or **Desktop**, and click **Analyze page load**. Sign in first;
 the login page must be checked signed out.

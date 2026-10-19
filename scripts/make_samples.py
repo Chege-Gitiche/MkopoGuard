@@ -10,7 +10,7 @@ and samples/manifest.json with the probability and decision the model must give 
 
 Before writing, every sample goes through the API's own path (validate the profile, check the
 statement, build the features, score) and must match the training data's features exactly, so
-the samples double as an end-to-end test (tests/unit/test_samples.py).
+the samples double as an end-to-end test (tests/model/test_samples.py).
 """
 
 import json

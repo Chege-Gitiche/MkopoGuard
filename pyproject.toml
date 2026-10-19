@@ -8,6 +8,8 @@ select = ["E", "F", "I", "B", "UP"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+addopts = "-m 'not e2e'"
+markers = ["e2e: browser tests against a running copy of the app (python -m pytest -m e2e)"]
 
 [build-system]
 requires = ["setuptools>=68"]

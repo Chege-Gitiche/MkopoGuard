@@ -97,7 +97,13 @@ def _read_table(data: bytes) -> pd.DataFrame:
         _fail("file", "The file isn't UTF-8 text; save it as CSV (UTF-8)")
     if "\x00" in text:
         _fail("file", "The file isn't a text CSV")
-    header = next(csv.reader(io.StringIO(text)), [])
+    # Excel for Mac's "CSV (Macintosh)" ends lines with a bare \r (step 7.4: Hypothesis found
+    # that this crashed the csv module with a 500); read it like any other line ending
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    try:
+        header = next(csv.reader(io.StringIO(text)), [])
+    except csv.Error as error:
+        _fail("file", f"Not a valid CSV: {error}")
     names = [h.strip() for h in header]
     missing = [c for c in COLUMNS if c not in names]
     extra = [c for c in names if c not in COLUMNS]

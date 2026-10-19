@@ -61,6 +61,12 @@ def test_a_case_planned_for_later_still_has_a_requirement_with_a_gap_or_a_test(r
             assert any(req in report.gaps or report.links.get(req) for req in case.requirements)
 
 
+def test_no_gap_or_planned_case_is_left(report):
+    """Step 7.4 closed the last gaps: from now on a requirement arrives with its tests."""
+    planned = [case_id for case_id, case in report.cases.items() if case.planned]
+    assert report.ok(strict=True), (report.gaps, planned)
+
+
 # --- the checker, on small made-up plans ------------------------------------------------------
 
 

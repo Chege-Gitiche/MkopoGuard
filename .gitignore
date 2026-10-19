@@ -10,3 +10,6 @@ mlruns/
 
 # local API database : never commit
 mkopoguard.db
+# Step 7.4: test tool output
+.hypothesis/
+test-results/

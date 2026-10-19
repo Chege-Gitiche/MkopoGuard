@@ -4,3 +4,9 @@ jupyter==1.1.1
 pre_commit==4.6.2
 pytest==9.1.1
 ruff==0.16.10
+# Step 7.4: property, browser, accessibility and load tests
+hypothesis==6.170.2
+playwright==1.56.0
+pytest-playwright==0.10.0
+axe-playwright-python==0.1.8
+locust==2.46.7

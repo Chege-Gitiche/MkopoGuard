@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-19",
+  "where": "local",
+  "users": 10,
+  "seconds": 120,
+  "model_version": "1.1.0",
+  "predict_requests": 247,
+  "predict_p50_ms": 3000.0,
+  "predict_p95_ms": 4100.0,
+  "predict_p99_ms": 4700.0,
+  "predict_max_ms": 4810,
+  "requests_per_second": 2.7,
+  "failures": 0,
+  "p95_target_ms": 500,
+  "machine": "Windows 11, 8 CPUs, Python 3.12.10",
+  "passed": false
+}

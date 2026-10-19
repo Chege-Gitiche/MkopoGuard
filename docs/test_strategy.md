@@ -2,7 +2,7 @@
 
 **Product:** MkopoGuard, a microloan default-risk scorer for loan officers (FastAPI service, a
 scikit-learn model with reason codes, and a plain HTML/CSS/JavaScript frontend).
-**Owner:** Emmanuel Chege Gitiche (developer and tester). **Version:** 1.0, 2026-10-19.
+**Owner:** Emmanuel Chege Gitiche (developer and tester). **Version:** 1.1, 2026-10-19 (step 7.4: test folders and commands).
 
 ## 1. Scope
 
@@ -48,8 +48,14 @@ Every requirement gets an ID and at least one test (traceability matrix in
 | Accessibility | No serious axe violations, Lighthouse 90 or more, keyboard use | Playwright + axe-core, Lighthouse | `tests/e2e` | Pull requests; Lighthouse by hand per release |
 | Performance | `/predict` latency at 10 users | Locust | `perf/` | Before each release |
 
-Today the automated tests live in `tests/unit` and `tests/data`; step 7.4 moves the model, API
-and security tests into their own folders and adds the end-to-end and load tests.
+How to run each layer:
+
+- `python -m pytest`: data, unit (with the Hypothesis property tests), model, API and
+  security tests. It also checks the last saved load test result.
+- `python -m pytest -m e2e`: the Playwright journeys and axe checks, in Chromium, against a
+  throwaway copy of the app on its own temporary database (add `--headed` to watch).
+- `python perf/run_load_test.py`: 10 users for 2 minutes against a throwaway copy of the app;
+  saves `docs/results/load_test.json`. Rerun before each release and for every new model.
 
 ## 4. Environments
 

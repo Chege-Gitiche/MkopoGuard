@@ -50,6 +50,17 @@ def test_excels_utf8_with_bom_and_windows_line_endings_are_fine():
     assert len(st.parse_statement(data, APPLIED).transactions) == len(rows())
 
 
+def test_old_mac_line_endings_are_fine():
+    """Regression (step 7.4, found by Hypothesis): a bare carriage return crashed the reader."""
+    data = to_csv(rows()).replace(b"\n", b"\r")  # Excel for Mac's "CSV (Macintosh)"
+    assert len(st.parse_statement(data, APPLIED).transactions) == len(rows())
+
+
+@pytest.mark.parametrize("data", [b"\r\x01", b"a\rb", b"timestamp,type\r\x01\n"])
+def test_a_stray_carriage_return_is_refused_not_a_crash(data):
+    assert problems(data)
+
+
 def test_columns_in_another_order_are_fine():
     table = [[r[1], r[0], r[2], r[3], r[4]] for r in rows()]
     header = ("type", "timestamp", "direction", "amount_kes", "balance_after")
