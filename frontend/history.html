@@ -9,6 +9,7 @@
   <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/style.css">
   <script type="module" src="/js/session.js"></script>
+  <script type="module" src="/js/history.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -58,7 +59,7 @@
           </div>
           <div class="field">
             <label for="ref">Reference starts with</label>
-            <input id="ref" name="ref" type="text" autocomplete="off" spellcheck="false">
+            <input id="ref" name="ref" type="text" maxlength="64" autocomplete="off" spellcheck="false">
           </div>
           <div class="field">
             <label for="date_from">From</label>
@@ -69,10 +70,12 @@
             <input id="date_to" name="date_to" type="date">
           </div>
       <button class="button" type="submit">Apply filters</button>
+      <a href="/history.html">Clear filters</a>
     </form>
+    <p class="notice notice-error" id="filter-error" role="alert" hidden></p>
 
     <div class="table-wrap">
-      <table class="responsive-table" role="table" aria-describedby="history-count">
+      <table class="responsive-table" id="history-table" role="table" aria-describedby="history-count" hidden>
         <caption class="visually-hidden">Your assessments</caption>
         <thead role="rowgroup">
           <tr role="row">
@@ -85,93 +88,13 @@
           </tr>
         </thead>
         <tbody role="rowgroup" id="history-rows">
-          <tr role="row">
-            <td role="cell" data-label="Date">16 Oct 2026, 10:05</td>
-            <td role="cell" data-label="Reference">SAMPLE-07</td>
-            <td role="cell" data-label="Probability" class="number">49.1%</td>
-            <td role="cell" data-label="Band"><span class="band band-very-high">Very high</span></td>
-            <td role="cell" data-label="Decision">Decline</td>
-            <td role="cell" data-label="Record"><a href="/detail.html?id=123">View<span class="visually-hidden"> SAMPLE-07</span></a></td>
-          </tr>
-          <tr role="row">
-            <td role="cell" data-label="Date">16 Oct 2026, 09:58</td>
-            <td role="cell" data-label="Reference">SAMPLE-08</td>
-            <td role="cell" data-label="Probability" class="number">56.5%</td>
-            <td role="cell" data-label="Band"><span class="band band-very-high">Very high</span></td>
-            <td role="cell" data-label="Decision">Decline</td>
-            <td role="cell" data-label="Record"><a href="/detail.html?id=122">View<span class="visually-hidden"> SAMPLE-08</span></a></td>
-          </tr>
-          <tr role="row">
-            <td role="cell" data-label="Date">16 Oct 2026, 09:51</td>
-            <td role="cell" data-label="Reference">SAMPLE-09</td>
-            <td role="cell" data-label="Probability" class="number">36.9%</td>
-            <td role="cell" data-label="Band"><span class="band band-very-high">Very high</span></td>
-            <td role="cell" data-label="Decision">Decline</td>
-            <td role="cell" data-label="Record"><a href="/detail.html?id=121">View<span class="visually-hidden"> SAMPLE-09</span></a></td>
-          </tr>
-          <tr role="row">
-            <td role="cell" data-label="Date">15 Oct 2026, 16:40</td>
-            <td role="cell" data-label="Reference">SAMPLE-05</td>
-            <td role="cell" data-label="Probability" class="number">25.0%</td>
-            <td role="cell" data-label="Band"><span class="band band-high">High</span></td>
-            <td role="cell" data-label="Decision">Approve</td>
-            <td role="cell" data-label="Record"><a href="/detail.html?id=120">View<span class="visually-hidden"> SAMPLE-05</span></a></td>
-          </tr>
-          <tr role="row">
-            <td role="cell" data-label="Date">15 Oct 2026, 16:32</td>
-            <td role="cell" data-label="Reference">SAMPLE-06</td>
-            <td role="cell" data-label="Probability" class="number">25.9%</td>
-            <td role="cell" data-label="Band"><span class="band band-high">High</span></td>
-            <td role="cell" data-label="Decision">Approve</td>
-            <td role="cell" data-label="Record"><a href="/detail.html?id=119">View<span class="visually-hidden"> SAMPLE-06</span></a></td>
-          </tr>
-          <tr role="row">
-            <td role="cell" data-label="Date">15 Oct 2026, 15:12</td>
-            <td role="cell" data-label="Reference">SAMPLE-10</td>
-            <td role="cell" data-label="Probability" class="number">19.2%</td>
-            <td role="cell" data-label="Band"><span class="band band-medium">Medium</span></td>
-            <td role="cell" data-label="Decision">Decline</td>
-            <td role="cell" data-label="Record"><a href="/detail.html?id=118">View<span class="visually-hidden"> SAMPLE-10</span></a></td>
-          </tr>
-          <tr role="row">
-            <td role="cell" data-label="Date">15 Oct 2026, 14:03</td>
-            <td role="cell" data-label="Reference">SAMPLE-04</td>
-            <td role="cell" data-label="Probability" class="number">12.5%</td>
-            <td role="cell" data-label="Band"><span class="band band-medium">Medium</span></td>
-            <td role="cell" data-label="Decision">Decline</td>
-            <td role="cell" data-label="Record"><a href="/detail.html?id=117">View<span class="visually-hidden"> SAMPLE-04</span></a></td>
-          </tr>
-          <tr role="row">
-            <td role="cell" data-label="Date">15 Oct 2026, 11:47</td>
-            <td role="cell" data-label="Reference">SAMPLE-03</td>
-            <td role="cell" data-label="Probability" class="number">10.6%</td>
-            <td role="cell" data-label="Band"><span class="band band-medium">Medium</span></td>
-            <td role="cell" data-label="Decision">Decline</td>
-            <td role="cell" data-label="Record"><a href="/detail.html?id=116">View<span class="visually-hidden"> SAMPLE-03</span></a></td>
-          </tr>
-          <tr role="row">
-            <td role="cell" data-label="Date">14 Oct 2026, 17:20</td>
-            <td role="cell" data-label="Reference">SAMPLE-01</td>
-            <td role="cell" data-label="Probability" class="number">7.5%</td>
-            <td role="cell" data-label="Band"><span class="band band-low">Low</span></td>
-            <td role="cell" data-label="Decision">Approve</td>
-            <td role="cell" data-label="Record"><a href="/detail.html?id=115">View<span class="visually-hidden"> SAMPLE-01</span></a></td>
-          </tr>
-          <tr role="row">
-            <td role="cell" data-label="Date">14 Oct 2026, 17:02</td>
-            <td role="cell" data-label="Reference">SAMPLE-02</td>
-            <td role="cell" data-label="Probability" class="number">3.6%</td>
-            <td role="cell" data-label="Band"><span class="band band-low">Low</span></td>
-            <td role="cell" data-label="Decision">Approve</td>
-            <td role="cell" data-label="Record"><a href="/detail.html?id=114">View<span class="visually-hidden"> SAMPLE-02</span></a></td>
-          </tr>
         </tbody>
       </table>
       <p class="empty" id="history-empty" hidden>No assessments match these filters. Clear a filter, or <a href="/assess.html">start a new assessment</a>.</p>
     </div>
 
     <nav class="pagination" aria-label="Pages of results">
-      <p id="history-count">Page 1 of 1, 10 assessments</p>
+      <p id="history-count">Loading your assessments…</p>
       <ul>
         <li><a class="button button-secondary" id="page-prev" href="/history.html?page=1" aria-disabled="true">Previous page</a></li>
         <li><a class="button button-secondary" id="page-next" href="/history.html?page=1" aria-disabled="true">Next page</a></li>

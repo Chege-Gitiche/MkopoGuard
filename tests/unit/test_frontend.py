@@ -505,3 +505,61 @@ def test_samples_are_served_for_load_sample(client):
 def test_the_samples_folder_serves_nothing_else(client):
     assert client.get("/samples/../src/mkopoguard/config.py").status_code == 404
     assert client.get("/samples/").status_code == 404  # no folder listing
+
+
+# --- history, saved assessments and model info (step 6.6) --------------------------------------
+
+
+@pytest.mark.parametrize(
+    "page_name, script",
+    [("history.html", "/js/history.js"), ("detail.html", "/js/detail.js"),
+     ("about.html", "/js/about.js")],
+)  # fmt: skip
+def test_live_pages_load_their_script_after_the_session_check(page_name, script):
+    sources = [a["src"] for a in parse(page_name).all("script")]
+    assert sources[0] == "/js/session.js" and script in sources
+
+
+@pytest.mark.parametrize(
+    "page_name, scripts",
+    [("history.html", ["history.js"]), ("detail.html", ["detail.js", "render.js"]),
+     ("about.html", ["about.js"])],
+)  # fmt: skip
+def test_live_pages_have_every_element_their_scripts_need(page_name, scripts):
+    optional = {"warnings", "warning-list"}  # render.js skips warnings on pages without them
+    missing = ids_used(*scripts) - set(parse(page_name).ids()) - optional
+    assert not missing, missing
+
+
+def test_history_has_no_made_up_rows_and_starts_hidden():
+    html = (FRONTEND / "history.html").read_text(encoding="utf-8")
+    body = re.search(r'<tbody role="rowgroup" id="history-rows">(.*?)</tbody>', html, re.S)
+    assert body and not body.group(1).strip()
+    attrs = {a["id"]: a for _, a in parse("history.html").tags if "id" in a}
+    assert "hidden" in attrs["history-table"]
+    assert attrs["filter-error"].get("role") == "alert"
+
+
+def test_detail_page_shows_every_answer():
+    """Every field the form sends (except the reference, shown in the heading) has a label."""
+    block = re.search(r"export const ANSWERS = \[(.*?)\n\];", js("detail.js"), re.S).group(1)
+    shown = re.findall(r'^\s*\["(\w+)",', block, re.M)
+    assert len(shown) == len(set(shown))
+    assert set(shown) == set(ApplicantProfile.model_fields) - {"applicant_ref"}
+
+
+def test_detail_page_has_words_for_every_choice_the_api_accepts():
+    schema = ApplicantProfile.model_json_schema()
+    text = js("detail.js")
+    for field in ("education_level", "emergency_fund_source", "worried_about_bills"):
+        values = set()
+        for option in schema["properties"][field].get("anyOf", []):
+            target = schema["$defs"][option["$ref"].split("/")[-1]] if "$ref" in option else option
+            values |= set(target.get("enum", []))
+        block = re.search(rf"{field}: \{{(.*?)\}}", text, re.S).group(1)
+        assert set(re.findall(r"(\w+):", block)) == set(values), field
+
+
+def test_the_back_link_can_only_return_to_a_history_page():
+    pattern = re.search(r"return (/\^.*?\$/)\.test\(address\)", js("store.js")).group(1)
+    assert pattern.startswith(r"/^\/history\.html")

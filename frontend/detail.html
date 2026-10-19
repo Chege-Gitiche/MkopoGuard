@@ -9,6 +9,7 @@
   <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/style.css">
   <script type="module" src="/js/session.js"></script>
+  <script type="module" src="/js/detail.js"></script>
   <script type="module" src="/js/ui.js"></script>
 </head>
 <body>
@@ -34,10 +35,13 @@
   <main id="main">
     <a class="back-link" href="/history.html">Back to history</a>
     <div class="page-head">
-      <h1>Assessment <span id="detail-id">#123</span></h1>
-      <p class="lede">Applicant <span id="detail-ref">SAMPLE-07</span>, assessed 16 Oct 2026, 10:05 by Wanjiku Mwangi</p>
+      <h1 id="detail-title">Saved assessment</h1>
+      <p class="lede" id="detail-lede"></p>
     </div>
 
+    <p class="notice" id="detail-status" role="status">Loading the assessment…</p>
+
+    <div id="detail" hidden>
     <section class="panel" aria-labelledby="verdict-heading">
       <h2 class="visually-hidden" id="verdict-heading">Score and decision</h2>
       <div class="verdict">
@@ -89,38 +93,19 @@
     <section class="panel" aria-labelledby="answers-heading">
       <h2 id="answers-heading">Applicant answers</h2>
       <dl class="answers" id="answers">
-        <div><dt>Application date</dt><dd>5 May 2025</dd></div>
-        <div><dt>Loan amount</dt><dd>KSh 2,500</dd></div>
-        <div><dt>Loan term</dt><dd>1 month</dd></div>
-        <div><dt>Age</dt><dd>22</dd></div>
-        <div><dt>Income group</dt><dd>5, richest fifth</dd></div>
-        <div><dt>In the workforce</dt><dd>No</dd></div>
-        <div><dt>Education</dt><dd>Secondary</dd></div>
-        <div><dt>Saved in the past year</dt><dd>No</dd></div>
-        <div><dt>Saved in a chama</dt><dd>No</dd></div>
-        <div><dt>Borrowed in the past year</dt><dd>Yes</dd></div>
-        <div><dt>From a bank or institution</dt><dd>No</dd></div>
-        <div><dt>From family or friends</dt><dd>Yes</dd></div>
-        <div><dt>For medical bills</dt><dd>No</dd></div>
-        <div><dt>Emergency money from</dt><dd>Family or friends</dd></div>
-        <div><dt>Worried about bills</dt><dd>Very worried</dd></div>
       </dl>
     </section>
 
     <section class="panel" aria-labelledby="statement-heading">
       <h2 id="statement-heading">M-Pesa statement</h2>
-      <dl class="facts" id="statement-summary">
-        <dt>Transactions</dt>
-        <dd class="number">336</dd>
-        <dt>Covers</dt>
-        <dd>6 Nov 2024 to 4 May 2025</dd>
-      </dl>
+      <p id="statement-summary"></p>
     </section>
 
     <section class="panel" aria-labelledby="model-heading">
       <h2 id="model-heading">Model</h2>
-      <p>Scored by version 1.1.0. Later versions may score the same answers differently; this record keeps the score as it was given.</p>
+      <p id="detail-model"></p>
     </section>
+    </div>
   </main>
   <footer class="site-footer">
     <p>Demo trained on synthetic data. Not for real lending decisions.</p>

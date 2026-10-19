@@ -9,6 +9,7 @@
   <link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/style.css">
   <script type="module" src="/js/session.js"></script>
+  <script type="module" src="/js/about.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -37,7 +38,7 @@
     </div>
 
     <div class="notice">
-      <p>Trained and tested on synthetic data: not for real lending decisions.</p>
+      <p id="model-notice">Trained and tested on synthetic data: not for real lending decisions.</p>
     </div>
 
     <section class="panel" aria-labelledby="facts-heading">
@@ -72,7 +73,7 @@
           </tbody>
         </table>
       </div>
-      <p class="hint">Assumes a fee of 7.5% a month, a funding cost of 1% a month, and that 80% of a defaulted loan is lost.</p>
+      <p class="hint" id="model-costs">Assumes a fee of 7.5% a month, a funding cost of 1% a month, and that 80% of a defaulted loan is lost.</p>
     </section>
 
     <section class="panel" aria-labelledby="bands-heading">

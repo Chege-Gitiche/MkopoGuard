@@ -6,6 +6,7 @@
 // long as the tab, and is wiped on log out.
 
 const KEY = "mkopoguard.lastResult";
+const HISTORY_KEY = "mkopoguard.historyAddress";
 
 export function saveResult(userId, prediction, profile) {
   try {
@@ -28,7 +29,30 @@ export function readResult(userId) {
 export function forgetResults() {
   try {
     sessionStorage.removeItem(KEY);
+    sessionStorage.removeItem(HISTORY_KEY);
   } catch {
     // nothing to forget
+  }
+}
+
+// The History page the officer last looked at (step 6.6), so "Back to history" on a saved
+// assessment returns to the same filters and page. (The browser sends no Referer header here:
+// the server's Referrer-Policy is no-referrer, so the page can't ask where it came from.)
+
+export function rememberHistory(address) {
+  try {
+    sessionStorage.setItem(HISTORY_KEY, address);
+  } catch {
+    // the plain History link still works
+  }
+}
+
+/** The last History address, only ever a History page on this site. */
+export function lastHistory() {
+  try {
+    const address = sessionStorage.getItem(HISTORY_KEY) || "";
+    return /^\/history\.html(\?[^#]*)?$/.test(address) ? address : "/history.html";
+  } catch {
+    return "/history.html";
   }
 }
