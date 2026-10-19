@@ -716,6 +716,18 @@ input[type="file"]::file-selector-button {
   font-variant-numeric: tabular-nums;
 }
 
+/* the disclaimer inside the score panel (step 6.8) */
+.verdict-note {
+  grid-column: 1 / -1;
+  max-width: none;
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
 .scale figcaption,
 .scale-caption {
   margin-top: var(--space-2);

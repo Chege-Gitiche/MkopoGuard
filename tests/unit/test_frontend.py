@@ -597,3 +597,32 @@ def test_the_login_page_checks_the_session_without_a_401():
     text = js("api.js")
     current = re.search(r"async currentUser\(\) \{(.*?)\n  \},", text, re.S).group(1)
     assert '"/auth/session"' in current and "/auth/me" not in current
+
+
+# --- the disclaimer (step 6.8) ---------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", ALL_PAGES)
+def test_the_disclaimer_is_never_hidden(name):
+    """In the page footer (the contentinfo landmark), once, and not hidden from anyone."""
+    html = (FRONTEND / name).read_text(encoding="utf-8")
+    footers = re.findall(r"<footer([^>]*)>(.*?)</footer>", html, re.S)
+    assert len(footers) == 1
+    attrs, body = footers[0]
+    assert "hidden" not in attrs and "visually-hidden" not in body
+    assert html.count(DISCLAIMER) == (2 if name in ("result.html", "detail.html") else 1)
+
+
+def test_the_disclaimer_prints():
+    """Print styles hide the navigation, never the footer."""
+    block = re.search(r"@media print \{(.*?)\n\}", css(), re.S).group(1)
+    hidden = re.search(r"([^{}]*)\{\s*display: none;", block).group(1)
+    assert "footer" not in hidden
+
+
+@pytest.mark.parametrize("name", ["result.html", "detail.html"])
+def test_the_decision_carries_the_disclaimer_with_it(name):
+    """The score panel is what gets screenshotted: the disclaimer is inside it."""
+    html = (FRONTEND / name).read_text(encoding="utf-8")
+    panel = re.search(r'<div class="verdict">(.*?)\n      </div>', html, re.S).group(1)
+    assert f'<p class="verdict-note">{DISCLAIMER}</p>' in panel
