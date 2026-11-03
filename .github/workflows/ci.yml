@@ -1,10 +1,31 @@
+# Step 7.5: the CI gates (docs/test_strategy.md, sections 3 and 5).
+#
+# Every push: Ruff, the traceability check, and the data, unit, model, API and security tests
+# with an 80% line-coverage gate. The coverage report is kept as a downloadable artifact.
+# Pull requests to main (or "Run workflow" on the Actions tab): the browser tests as well.
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONPATH: src
 
 jobs:
   test:
+    name: Lint, traceability and tests (coverage 80%+)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -21,5 +42,64 @@ jobs:
           ruff check .
           ruff format --check .
 
-      - name: Run tests
-        run: pytest
+      - name: Every requirement has tests, every named test exists
+        run: python scripts/check_traceability.py --strict
+
+      - name: Tests with coverage
+        run: >-
+          python -m pytest -rs
+          --junitxml=test-results/junit.xml
+          --cov --cov-report=term-missing:skip-covered
+          --cov-report=html --cov-report=xml
+
+      - name: Only the data tests may skip
+        if: success() || failure()
+        run: python scripts/check_skips.py test-results/junit.xml
+
+      - name: Coverage summary
+        if: success() || failure()
+        run: coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the coverage report
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            htmlcov/
+            coverage.xml
+            test-results/junit.xml
+          retention-days: 30
+
+  e2e:
+    name: Browser tests (Playwright + axe)
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies and Chromium
+        run: |
+          pip install -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: >-
+          python -m pytest -m e2e
+          --tracing retain-on-failure --screenshot only-on-failure
+          --output test-results/e2e
+
+      - name: Keep traces of failed browser tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/e2e/
+          retention-days: 14

@@ -1,7 +1,7 @@
 # Test plan
 
 How MkopoGuard's requirements are proved. The strategy behind it is in `docs/test_strategy.md`.
-**Version:** 1.2, 2026-10-19 (step 7.4: browser, property and load tests; no gaps left).
+**Version:** 1.3, 2026-11-03 (step 7.5: CI gates).
 
 This file is checked by a script: every test named in the matrix must exist, and every
 requirement must have a test or a planned gap. Run `python scripts/check_traceability.py`.
@@ -59,6 +59,7 @@ requirement must have a test or a planned gap. Run `python scripts/check_traceab
 | NFR-17 | Database migrations go up and down cleanly and keep existing history | Must |
 | NFR-18 | Times are stored in UTC and shown in Kenyan time | Should |
 | NFR-19 | Input never runs as code: SQL in any field reaches the database only as a value, and pages insert data only as text | Must |
+| NFR-20 | Every push is checked by CI: lint, traceability, the tests with 80% line coverage and no unexpected skips; browser tests on pull requests to `main` | Should |
 
 ## 3. Traceability matrix
 
@@ -111,6 +112,7 @@ the missing test.
 | NFR-17 | `tests/api/test_database.py::test_migrations_go_down_and_up_again`<br>`tests/api/test_database.py::test_migrations_keep_existing_history`<br>`tests/api/test_database.py::test_models_and_migrations_agree` | Covered |
 | NFR-18 | `tests/api/test_database.py::test_times_are_always_returned_in_utc`<br>`tests/api/test_history.py::test_filter_by_kenyan_calendar_days`<br>`tests/unit/test_statement.py::test_times_with_a_timezone_are_converted_to_kenyan_time` | Covered |
 | NFR-19 | `tests/security/test_injection.py::test_sql_in_the_email_is_just_a_wrong_login`<br>`tests/security/test_injection.py::test_sql_in_the_history_filter_finds_nothing`<br>`tests/security/test_injection.py::test_markup_or_sql_can_never_be_an_applicant_reference`<br>`tests/unit/test_frontend.py::test_scripts_never_write_html` | Covered |
+| NFR-20 | `tests/unit/test_ci.py::test_every_push_is_linted_traced_and_tested_with_coverage`<br>`tests/unit/test_ci.py::test_the_coverage_gate_is_the_strategys_80_percent`<br>`tests/unit/test_ci.py::test_browser_tests_run_on_pull_requests_to_main_and_on_demand`<br>`tests/unit/test_ci.py::test_a_skip_in_any_other_layer_fails_the_run` | Covered |
 
 ## 4. Test cases
 
@@ -224,10 +226,17 @@ out, or says Manual (with the record of the run) or Planned (with the step that 
 | TC-77 | NFR-13 | Negative | Add transactions on and after the application day to generated statements | 1 to 10 extra rows up to 30 days after the application | The features don't change at all | `tests/unit/test_properties.py::test_transactions_on_or_after_the_application_day_change_nothing` |
 | TC-78 | FR-12 | Happy | Score invented applicants with every allowed answer, with and without a statement | Any age, loan, term, income group and answers that agree with each other | Probability between 0 and 1; band and decision follow from it; 3 + 2 different reasons in order of strength; no statement reasons without a statement; the same score every time and whatever the reference | `tests/model/test_model_properties.py::test_every_valid_applicant_gets_a_complete_consistent_result`<br>`tests/model/test_model_properties.py::test_the_score_is_repeatable_and_ignores_the_reference` |
 
+### Continuous integration
+
+| ID | Requirement | Type | Steps | Test data | Expected result | How it runs |
+|---|---|---|---|---|---|---|
+| TC-79 | NFR-20 | Happy | Push a commit to any branch | The repository as committed | CI runs Ruff, `check_traceability.py --strict` and the tests with coverage; fails under 80%; keeps the coverage report as an artifact even when tests fail | `tests/unit/test_ci.py::test_every_push_is_linted_traced_and_tested_with_coverage`<br>`tests/unit/test_ci.py::test_the_coverage_gate_is_the_strategys_80_percent`<br>`tests/unit/test_ci.py::test_the_coverage_report_is_kept_even_when_tests_fail` |
+| TC-80 | NFR-20 | Negative | A CI run in which a model, API, security or unit test skips (for example because the bundle went missing) | A test report with one skip in each layer; data skips and expected failures | Each non-data skip fails the run and is named; data skips and the known expected failures are allowed | `tests/unit/test_ci.py::test_a_skip_in_any_other_layer_fails_the_run`<br>`tests/unit/test_ci.py::test_data_tests_may_skip_and_expected_failures_are_not_skips` |
+
 ### Summary
 
-78 test cases: 27 happy path, 17 boundary and 34 negative, all with automated tests. Browser
-tests run with `python -m pytest -m e2e`; the load test (TC-70) with
+80 test cases: 28 happy path, 17 boundary and 35 negative, all with automated tests. CI runs
+them on every push; browser tests (`python -m pytest -m e2e`) run on pull requests to `main`; the load test (TC-70) with
 `python perf/run_load_test.py` before each release and whenever the model changes. Seven cases
 were also run by hand in Phase 6 (TC-07, TC-41 to TC-43, TC-51, TC-68, TC-69); Lighthouse and
 the keyboard check (TC-68) and the 320 px check (TC-69) are still repeated by hand before each

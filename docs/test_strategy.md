@@ -2,7 +2,7 @@
 
 **Product:** MkopoGuard, a microloan default-risk scorer for loan officers (FastAPI service, a
 scikit-learn model with reason codes, and a plain HTML/CSS/JavaScript frontend).
-**Owner:** Emmanuel Chege Gitiche (developer and tester). **Version:** 1.1, 2026-10-19 (step 7.4: test folders and commands).
+**Owner:** Emmanuel Chege Gitiche (developer and tester). **Version:** 1.2, 2026-11-03 (step 7.5: CI gates).
 
 ## 1. Scope
 
@@ -39,7 +39,7 @@ Every requirement gets an ID and at least one test (traceability matrix in
 
 | Layer | What it checks | Tool | Folder | Runs |
 |---|---|---|---|---|
-| Data | Schemas, ranges, leakage (no transaction after its loan date) | pytest, project data checks | `tests/data` | Every push |
+| Data | Schemas, ranges, leakage (no transaction after its loan date) | pytest, project data checks | `tests/data` | Locally before each release (they need the generated data, which isn't committed, so CI skips them) |
 | Unit | Cleaning, features, statement parser, reason codes, helpers | pytest, Hypothesis | `tests/unit` | Every push |
 | Model | Quality floor, calibration, determinism, behaviour, golden examples | pytest | `tests/model` | Every push |
 | API | Status codes, validation, auth, roles, data isolation, migrations | pytest + httpx | `tests/api` | Every push |
@@ -62,7 +62,7 @@ How to run each layer:
 | Environment | Used for | Details |
 |---|---|---|
 | Local | Development, all layers | Windows 11, Git Bash, Python virtual environment, SQLite, Chrome |
-| CI | Every push and pull request | GitHub Actions on Ubuntu, fresh SQLite database, headless Chromium (step 7.5) |
+| CI | Every push; browser tests on pull requests to `main` and on demand | GitHub Actions (`.github/workflows/ci.yml`), Ubuntu, Python 3.12, fresh SQLite database, headless Chromium. Fails on Ruff, the traceability check, any test, coverage under 80%, or any skip outside `tests/data`; keeps the coverage report as an artifact |
 | Live | Smoke and load tests after deployment | Free-tier host and Supabase Postgres (Phase 8) |
 
 Test data is synthetic only: the generated population and the ten committed sample applicants.

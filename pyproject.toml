@@ -22,3 +22,11 @@ requires-python = ">=3.11"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.coverage.run]
+source = ["mkopoguard"]
+
+[tool.coverage.report]
+fail_under = 80  # docs/test_strategy.md, section 5
+show_missing = true
+skip_covered = true
