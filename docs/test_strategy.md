@@ -76,8 +76,8 @@ packaged model bundle.
 
 **Exit** (before a release is tagged or deployed):
 
-- All automated tests pass. The only expected failures are the three known behaviour flips,
-  kept as strict expected failures so a fix is noticed.
+- All automated tests pass. The only expected failures are the three known behaviour flips
+  and the speed target (BUG-002), kept as strict expected failures so a fix is noticed.
 - Line coverage of `src/mkopoguard` is 80% or more.
 - Model: test PR-AUC 0.35 or more (a random guess scores the default rate, about 0.20);
   calibration error (ECE) 0.03 or less; the golden examples replay exactly.
@@ -105,6 +105,9 @@ packaged model bundle.
   overdraft borrowing lowers it slightly). Kept as strict expected failures; addressed in Phase 9.
 - **Logout:** login tokens are not stored on the server, so a copied token works until it
   expires (at most 30 minutes).
+- **Speed (BUG-002, open):** at 10 users pausing only 1 to 2 seconds, `/predict` p95 was
+  4.1 s against the 500 ms target (2026-10-19, Windows laptop). No request failed; one app
+  process can't keep up. Kept as a strict expected failure until it's fixed.
 
 ## 8. Defects
 
