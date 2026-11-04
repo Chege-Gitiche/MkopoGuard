@@ -93,3 +93,17 @@ def test_a_statement_the_server_refuses_is_explained_next_to_its_field(officer: 
     expect(page.locator("#form-errors")).to_contain_text("Only 1 transactions")
     expect(page).to_have_url(re.compile(r"/assess\.html$"))
     expect(page.get_by_role("button", name="Assess risk")).to_be_enabled()
+
+
+def test_the_back_link_returns_to_the_same_filtered_history_page(officer: Page):
+    """Regression for BUG-004: the saved assessment's back link lost the History filters."""
+    page = officer
+    load_sample(page, "sample_10_thin_file")
+    page.get_by_role("button", name="Assess risk").click()
+    expect(page).to_have_url(re.compile(r"/result\.html\?id=\d+$"))
+
+    page.goto("/history.html?ref=SAMPLE-10")
+    page.get_by_role("link", name="View SAMPLE-10").first.click()
+    expect(page).to_have_url(re.compile(r"/detail\.html\?id=\d+$"))
+    page.get_by_role("link", name="Back to history").click()
+    expect(page).to_have_url(re.compile(r"/history\.html\?ref=SAMPLE-10$"))

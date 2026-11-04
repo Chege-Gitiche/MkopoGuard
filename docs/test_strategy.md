@@ -2,7 +2,7 @@
 
 **Product:** MkopoGuard, a microloan default-risk scorer for loan officers (FastAPI service, a
 scikit-learn model with reason codes, and a plain HTML/CSS/JavaScript frontend).
-**Owner:** Emmanuel Chege Gitiche (developer and tester). **Version:** 1.2, 2026-11-03 (step 7.5: CI gates).
+**Owner:** Emmanuel Chege Gitiche (developer and tester). **Version:** 1.3, 2026-11-04 (step 7.6: bug log).
 
 ## 1. Scope
 
@@ -112,7 +112,8 @@ packaged model bundle.
 ## 8. Defects
 
 Logged in `docs/bug_log.md` with ID, date, summary, severity, steps, root cause, fix commit and
-regression test.
+regression test. `tests/unit/test_bug_log.py` checks the log on every run: every bug names a
+regression test that exists, and an open bug's test is a strict expected failure naming it.
 
 | Severity | Meaning |
 |---|---|
